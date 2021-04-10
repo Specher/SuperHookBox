@@ -78,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         textView.setText(Html.fromHtml("<p>HookBox"+name+" 个人常用Xposed功能集合模块</p>" +
                 "<p>Specher制作 E-mail:<a href=\"mailto:Specher@qq.com\">Specher@qq.com</a></p>" +
                 "<p>获取更新/反馈请加TG频道：<a href=\"https://t.me/Hookbox\">@HookBox</a></p>" +
+                "<p>GitHub开源：<a href=\"https://github.com/Specher/SuperHookBox\">@SuperHookBox</a></p>" +
                 "<p><font color=\"#FF0000\">免费软件，仅供学习和娱乐使用，请勿用于商业用途或传播，否则后果自负。</font></p>"));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
         builder.setView(textView);
