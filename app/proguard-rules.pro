@@ -24,11 +24,6 @@
 -dontwarn okhttp3.**
 -keep class okhttp3.*{*;}
 
-# 使用字典混淆
--obfuscationdictionary dic.txt
--classobfuscationdictionary dic.txt
--packageobfuscationdictionary dic.txt
-
 # 清除日志
 -assumenosideeffects class android.util.Log {
 public static *** d(...);
@@ -37,3 +32,4 @@ public static *** i(...);
 public static *** v(...);
 public static *** println(...);
 public static *** w(...);
+}
