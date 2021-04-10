@@ -2,36 +2,14 @@ package com.specher.superhookbox;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.viewpager.widget.ViewPager;
-
 import org.json.JSONObject;
-
-import java.io.File;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
@@ -44,13 +22,15 @@ public class Tiktok {
     public static JSONObject checks;
     public static String configName = "tiktok.json";
     public static Config config;
+    public static Object VideoViewHolder;
     private static Class<?> hookClass_DisLikeAwemeLayout;
     private static Class<?> hookClass_LongPressLayout;
     private static Class<?> hookClass_com_VideoViewHolder;
     private static Class<?> hookClass_MainFragment;
     private static Class<?> hookClass_VideoModle;
     private static Class<?> hookClass_BaseListFragmentPanel;
-    public  static Object VideoViewHolder;
+    private static boolean isHide=false;
+
     public static void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
 
 
@@ -72,7 +52,7 @@ public class Tiktok {
         }
 
 
-      Utils.log("tiktokhook:version:" + versionCode);
+        Utils.log("tiktokhook:version:" + versionCode);
         config = new Config(context, configName);
         checks = config.readPref();
         XposedHelpers.findAndHookMethod("com.ss.android.ugc.aweme.main.MainActivity", loadPackageParam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
@@ -88,13 +68,9 @@ public class Tiktok {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             VideoViewHolder = param.thisObject;
-                            Utils.log("拿到："+VideoViewHolder);
+                            Utils.log("拿到：" + VideoViewHolder);
 
-                            if(checks.getBoolean(config.hideRightMenu)){
-                                XposedHelpers.callMethod(VideoViewHolder,"l",true);
-                            }else{
-                                XposedHelpers.callMethod(VideoViewHolder,"l",false);
-                            }
+                            XposedHelpers.callMethod(VideoViewHolder, "l", checks.getBoolean(config.hideRightMenu));
 
 
                             super.afterHookedMethod(param);
@@ -104,11 +80,11 @@ public class Tiktok {
                     /**
                      * 自动播放
                      */
-                    XposedHelpers.findAndHookMethod(hookClass_BaseListFragmentPanel, "onPlayCompletedFirstTime",String.class, new XC_MethodHook() {
+                    XposedHelpers.findAndHookMethod(hookClass_BaseListFragmentPanel, "onPlayCompletedFirstTime", String.class, new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 
-                            if(checks.getBoolean(config.isAutoPlay)) {
+                            if (checks.getBoolean(config.isAutoPlay)) {
                                 Utils.log("param:" + param.args[0] + "播放一次");
                                 Object mViewPager = XposedHelpers.getObjectField(param.thisObject, "mViewPager");
                                 XposedHelpers.callMethod(mViewPager, "setCurrentItem", (int) XposedHelpers.callMethod(mViewPager, "getCurrentItem") + 1);
@@ -124,8 +100,8 @@ public class Tiktok {
                     XposedHelpers.findAndHookMethod(hookClass_VideoModle, "getDownloadAddr", new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                            if(checks.getBoolean(config.downLoadVideo)) {
-                                Toast.makeText(mActivity,"已开启无水印下载。",Toast.LENGTH_SHORT).show();
+                            if (checks.getBoolean(config.downLoadVideo)) {
+                                Toast.makeText(mActivity, "已开启无水印下载。", Toast.LENGTH_SHORT).show();
                                 param.setResult(XposedHelpers.callMethod(param.thisObject, "getPlayAddr"));
                             }
                             super.beforeHookedMethod(param);
@@ -134,67 +110,67 @@ public class Tiktok {
                     /**
                      * 长按Hook
                      */
-                    XposedHelpers.findAndHookMethod(hookClass_LongPressLayout,"run",new XC_MethodReplacement() {
+                    XposedHelpers.findAndHookMethod(hookClass_LongPressLayout, "run", new XC_MethodReplacement() {
                         @SuppressLint("ResourceType")
                         @Override
                         protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
                             Utils.log("触发LongPress");
-                            if(checks.getBoolean(config.fullVideoPlay)){
+                            if (checks.getBoolean(config.fullVideoPlay)) {
                                 //底部TabView
                                 FrameLayout mMainBottomTabView = null;
-                                if(checks.getBoolean(config.hideBottomTab))
-
-                                 mMainBottomTabView =(FrameLayout) XposedHelpers.getObjectField(mActivity,"mMainBottomTabView");
+                                if (checks.getBoolean(config.hideBottomTab))
+                                    mMainBottomTabView = (FrameLayout) XposedHelpers.getObjectField(mActivity, "mMainBottomTabView");
 
                                 //拿到MainFragment
-                                Object mMainFragment =XposedHelpers.callMethod(XposedHelpers.getObjectField(mActivity,"mTabChangeManager"),"f");
+                                Object mMainFragment = XposedHelpers.callMethod(XposedHelpers.getObjectField(mActivity, "mTabChangeManager"), "f");
 
                                 //audioView
                                 //View audioView = (View) XposedHelpers.getObjectField(mActivity,"audioView");
 
                                 //顶部Tab 推荐/附近
                                 LinearLayout mPagerTabStrip = null;
-                                View a = null,b=null,c=null;
-                                if(checks.getBoolean(config.hideTopTab)) {
+                                View a = null, b = null, c = null;
+                                if (checks.getBoolean(config.hideTopTab)) {
                                     mPagerTabStrip = (LinearLayout) XposedHelpers.getObjectField(mMainFragment, "mPagerTabStrip");
 
                                     //顶部故事和相机按钮
-                                    a  = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStoryCamera");
+                                    a = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStoryCamera");
                                     b = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStorySwitch");
                                     //顶部搜索按钮
                                     c = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnSearch");
                                 }
 
                                 //隐藏通知栏
-                                if(checks.getBoolean(config.hideStatusBar))
-                                    XposedHelpers.callMethod(mActivity,"hideStatusBar");//showStatusBar
+                                if (checks.getBoolean(config.hideStatusBar))
+                                    XposedHelpers.callMethod(mActivity, "hideStatusBar");//showStatusBar
 
                                 //隐藏切换
-                                if(mMainBottomTabView.getVisibility()!=View.GONE){
-                                    if(mPagerTabStrip!=null)
+                                if (!isHide) {
+                                    if (mPagerTabStrip != null)
                                         mPagerTabStrip.setVisibility(View.GONE);
-                                    if(mMainBottomTabView!=null)
+                                    if (mMainBottomTabView != null)
                                         mMainBottomTabView.setVisibility(View.GONE);
-                                    if(a!=null) {
+                                    if (a != null) {
                                         a.setVisibility(View.GONE);
                                         b.setVisibility(View.GONE);
                                         c.setVisibility(View.GONE);
                                     }
-                                }else{
-                                    if(mPagerTabStrip!=null)
+                                    isHide=true;
+                                } else {
+                                    if (mPagerTabStrip != null)
                                         mPagerTabStrip.setVisibility(View.VISIBLE);
-                                    if(mMainBottomTabView!=null)
+                                    if (mMainBottomTabView != null)
                                         mMainBottomTabView.setVisibility(View.VISIBLE);
-                                    if(a!=null) {
+                                    if (a != null) {
                                         a.setVisibility(View.VISIBLE);
                                         b.setVisibility(View.VISIBLE);
                                         c.setVisibility(View.VISIBLE);
                                     }
-                                    if(!checks.getBoolean(config.hideStatusBar))
-                                        XposedHelpers.callMethod(mActivity,"showStatusBar");
+                                    if (!checks.getBoolean(config.hideStatusBar))
+                                        XposedHelpers.callMethod(mActivity, "showStatusBar");
+                                    isHide=false;
                                 }
-                            }
-                            else{
+                            } else {
                                 XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
                             }
                             return null;

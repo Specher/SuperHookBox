@@ -1,14 +1,11 @@
 package com.specher.superhookbox;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -17,38 +14,38 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 public class Config extends FileProvider {
-    public JSONObject globalJSON = new JSONObject();
-    public static File rootPath = new File(Environment.getExternalStorageDirectory()+"/Documents");
-    public final String tiktokShow="抖音自动播放/去水印/全屏\n支持抖音版本:15.1.1精简版\n目前隐藏右侧按钮和文字开启后需要点返回显示，不过隐藏了也可以点到评论按钮。暂时这样写省点时间，以后会改成长按切换隐藏显示";
-    public final String telegramShow="重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
+    public static File rootPath = new File(Environment.getExternalStorageDirectory() + "/Documents");
+    public final String tiktokShow = "抖音自动播放/去水印/全屏\n支持抖音版本:15.1.1精简版\n目前隐藏右侧按钮和文字开启后需要点返回显示，不过隐藏了也可以点到评论按钮。暂时这样写省点时间，以后会改成长按切换隐藏显示";
+    public final String telegramShow = "重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
             "开启删除.nomedia可以让文件夹在相册中出现，方便同步到云端。\n" +
             "阻止删除消息重新打开聊天界面删除的消息即会出现。\n" +
             "支持版本：Telegram官方版/TG Plus/Nekogram X/Telegram科学版";
-    public String isTikTok ="开启抖X功能";
+    private final String jsonFilename;
+    public JSONObject globalJSON = new JSONObject();
+    public String isTikTok = "开启抖X功能";
     public String isAutoPlay = "自动播放下一条";
     public String downLoadVideo = "无水印下载";
-    public String hideRightMenu ="隐藏右侧按钮和文字";
+    public String hideRightMenu = "隐藏右侧按钮和文字";
     public String fullVideoPlay = "长按切换全屏模式";
-    public String hideStatusBar ="全屏时隐藏状态栏";
-    public String hideBottomTab ="全屏时隐藏底栏";
-    public String hideTopTab ="全屏时隐藏顶栏";
+    public String hideStatusBar = "全屏时隐藏状态栏";
+    public String hideBottomTab = "全屏时隐藏底栏";
+    public String hideTopTab = "全屏时隐藏顶栏";
     public String isTelegram = "开启Telegram功能";
     public String storageRedirect = "重定向存储";
     public String delNomedia = "删除.nomedia文件";
     public String Unrecalled = "阻止删除消息";
     public String isFirst = "首次启动";
-    private final String jsonFilename;
-    private Context mContext;
+    private final Context mContext;
 
     Config(Context context, String jsonFilename) throws Exception {
-        this.mContext=context;
-        this.jsonFilename =jsonFilename;
+        this.mContext = context;
+        this.jsonFilename = jsonFilename;
         initPref();
     }
+
     public JSONObject readPref() throws Exception {
         InputStreamReader fileReader = new InputStreamReader(new FileInputStream(new File(rootPath, jsonFilename)));
         BufferedReader fp = new BufferedReader(fileReader);
@@ -85,27 +82,27 @@ public class Config extends FileProvider {
 
 
     public String getOption(int index) throws JSONException {
-       return this.globalJSON.names().get(index).toString();
+        return this.globalJSON.names().get(index).toString();
     }
 
-    public int getOptionLength(){
+    public int getOptionLength() {
         return this.globalJSON.length();
     }
 
     public String[] getOptions() throws JSONException {
-        String[] arr=new String[getOptionLength()];
-        for(int i=0;i<getOptionLength();i++){
-            arr[i]=  globalJSON.names().get(i).toString();
-            Log.i("test",arr[i]);
+        String[] arr = new String[getOptionLength()];
+        for (int i = 0; i < getOptionLength(); i++) {
+            arr[i] = globalJSON.names().get(i).toString();
+            Log.i("test", arr[i]);
         }
         return arr;
     }
 
-      private void initPref() throws Exception {
-        if(!rootPath.exists()){
+    private void initPref() throws Exception {
+        if (!rootPath.exists()) {
             rootPath.mkdir();
         }
-        if(jsonFilename.equals("tiktok.json")) {
+        if (jsonFilename.equals("tiktok.json")) {
             this.globalJSON.put(this.isAutoPlay, false);
             this.globalJSON.put(this.downLoadVideo, false);
             this.globalJSON.put(this.fullVideoPlay, false);
@@ -113,11 +110,11 @@ public class Config extends FileProvider {
             this.globalJSON.put(this.hideBottomTab, true);
             this.globalJSON.put(this.hideTopTab, true);
             this.globalJSON.put(this.hideRightMenu, true);
-        }else if(jsonFilename.equals("Telegram.json")){
+        } else if (jsonFilename.equals("Telegram.json")) {
             this.globalJSON.put(this.storageRedirect, false);
-            this.globalJSON.put(this.delNomedia,false);
-            this.globalJSON.put(this.Unrecalled,false);
-        }else if(jsonFilename.equals("HookBox.json")){
+            this.globalJSON.put(this.delNomedia, false);
+            this.globalJSON.put(this.Unrecalled, false);
+        } else if (jsonFilename.equals("HookBox.json")) {
             this.globalJSON.put(this.isTikTok, false);
             this.globalJSON.put(this.isTelegram, false);
             this.globalJSON.put(this.isFirst, true);

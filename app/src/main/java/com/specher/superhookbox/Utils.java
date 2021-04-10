@@ -1,14 +1,5 @@
 package com.specher.superhookbox;
 
-import android.content.ContentResolver;
-import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.os.Build;
-import android.provider.MediaStore;
-
-import androidx.core.content.FileProvider;
-
 import java.io.File;
 
 import de.robv.android.xposed.XposedBridge;
@@ -20,6 +11,7 @@ public class Utils {
 
     /**
      * 获取目标应用 VersionName
+     *
      * @param lpparam
      * @return
      */
@@ -38,6 +30,7 @@ public class Utils {
 
     /**
      * 获取目标应用 VersionCode
+     *
      * @param lpparam
      * @return
      */
@@ -58,10 +51,11 @@ public class Utils {
 
     /**
      * Xposed打印日志
+     *
      * @param log
      */
-    public static void log(String log){
-        XposedBridge.log(TAG+log);
+    public static void log(String log) {
+        XposedBridge.log(TAG + log);
     }
 
 }

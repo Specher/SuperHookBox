@@ -21,7 +21,7 @@ public class Telegram {
     public static void hook(Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
 
         Utils.log("Telegram loaded");
-        config = new Config(context,"Telegram.json");
+        config = new Config(context, "Telegram.json");
         pref = config.readPref();
 
 
