@@ -33,9 +33,7 @@ import java.util.Iterator;
 
 
 public class MainActivity extends AppCompatActivity {
-    /**
-     * 动态获取存储权限
-     */
+
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static final String[] PERMISSON_STORAGE = {"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"};
     private Config config, mConfig;
@@ -301,6 +299,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     *  动态获取存储权限
+     *
+     * @param activity activity
+     */
     public void verifyStoragePermissions(Activity activity) {
         try {
             int permission = ActivityCompat.checkSelfPermission(activity, "android.permission.WRITE_EXTERNAL_STORAGE");

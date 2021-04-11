@@ -10,9 +10,9 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 public class Hook implements IXposedHookLoadPackage {
     public static String configName = "HookBox.json";
-    Config config;
-    JSONObject pref;
-    Context context;
+    private Config config;
+    private JSONObject pref;
+    private Context context;
 
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
         if (loadPackageParam.packageName.equals("org.telegram.messenger") || loadPackageParam.packageName.equals("org.telegram.plus") || loadPackageParam.packageName.equals("nekox.messenger") || loadPackageParam.packageName.equals("org.telegram.messengers")) {
@@ -23,7 +23,7 @@ public class Hook implements IXposedHookLoadPackage {
             }
             if (context != null) {
                 if (pref.getBoolean(config.isTelegram)) {
-                    Telegram.hook(context, loadPackageParam);
+                    new Telegram().hook(context, loadPackageParam);
                 }
             }
         }
@@ -35,7 +35,7 @@ public class Hook implements IXposedHookLoadPackage {
             }
             if (context != null) {
                 if (pref.getBoolean(config.isTikTok)) {
-                    Tiktok.hook(context, loadPackageParam);
+                    new Tiktok().hook(context, loadPackageParam);
                 }
             }
         }

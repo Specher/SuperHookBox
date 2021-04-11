@@ -14,20 +14,16 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class Telegram {
-    public static Config config;
+    private Config config;
+    private JSONObject pref;
 
-    public static JSONObject pref;
-
-    public static void hook(Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
-
+    public void hook(Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
         Utils.log("Telegram loaded");
         config = new Config(context, "Telegram.json");
         pref = config.readPref();
 
 
-        /**
-         * 重定向存储
-         */
+        //重定向存储
         XposedBridge.hookAllConstructors(XposedHelpers.findClass("java.io.File", loadPackageParam.classLoader), new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -78,20 +74,18 @@ public class Telegram {
             }
         });
 
-        /**
-         *
-         */
+        //阻止撤回
         Class<?> cls = XposedHelpers.findClass("org.telegram.messenger.MessagesStorage", loadPackageParam.classLoader);
         XposedBridge.hookAllMethods(cls, "markMessagesAsDeleted", new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
                 if (pref.getBoolean(config.Unrecalled)) {
                     if (param.args[0] instanceof ArrayList) {
-                        ArrayList r25 = (ArrayList) param.args[0];
-                        if (r25.size() > 0) {
-                            Integer r4 = (Integer) r25.get(r25.size() - 1);
-                            Utils.log("tghook:阻止撤回" + r4);
-                        }
+//                        ArrayList r25 = (ArrayList) param.args[0];
+//                        if (r25.size() > 0) {
+//                            Integer r4 = (Integer) r25.get(r25.size() - 1);
+//                            Utils.log("tghook:阻止撤回" + r4);
+//                        }
                     }
 
                 } else {
