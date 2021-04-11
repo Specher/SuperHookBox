@@ -3,6 +3,7 @@ package com.specher.superhookbox;
 import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
@@ -36,7 +37,8 @@ public class Config extends FileProvider {
     public String isTelegram = "开启Telegram功能";
     public String storageRedirect = "重定向存储";
     public String delNomedia = "删除.nomedia文件";
-    public String Unrecalled = "阻止删除消息";
+    public String unRecalled = "阻止删除消息";
+    public String unDelete = "阻止消息自毁(阅后即焚)";
     public String isFirst = "首次启动";
     private final Context mContext;
 
@@ -55,10 +57,7 @@ public class Config extends FileProvider {
             String readLine = fp.readLine();
             re = readLine;
             if (readLine != null) {
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.append(result);
-                stringBuilder.append(re);
-                result = stringBuilder.toString();
+                result = result + re;
             } else {
                 JSONObject json = new JSONObject(result);
                 fp.close();
@@ -100,25 +99,32 @@ public class Config extends FileProvider {
 
     private void initPref() throws Exception {
         if (!rootPath.exists()) {
-            rootPath.mkdir();
+          if(!rootPath.mkdir()){
+              Toast.makeText(mContext,"配置文件夹创建失败。",Toast.LENGTH_SHORT).show();
+          }
         }
-        if (jsonFilename.equals("tiktok.json")) {
-            this.globalJSON.put(this.isAutoPlay, false);
-            this.globalJSON.put(this.downLoadVideo, false);
-            this.globalJSON.put(this.fullVideoPlay, false);
-            this.globalJSON.put(this.hideStatusBar, false);
-            this.globalJSON.put(this.hideBottomTab, true);
-            this.globalJSON.put(this.hideTopTab, true);
-            this.globalJSON.put(this.hideRightMenu, true);
-        } else if (jsonFilename.equals("Telegram.json")) {
-            this.globalJSON.put(this.storageRedirect, false);
-            this.globalJSON.put(this.delNomedia, false);
-            this.globalJSON.put(this.Unrecalled, false);
-        } else if (jsonFilename.equals("HookBox.json")) {
-            this.globalJSON.put(this.isTikTok, false);
-            this.globalJSON.put(this.isTelegram, false);
-            this.globalJSON.put(this.isFirst, true);
+        switch (jsonFilename) {
+            case "tiktok.json":
+                this.globalJSON.put(this.isAutoPlay, false);
+                this.globalJSON.put(this.downLoadVideo, false);
+                this.globalJSON.put(this.fullVideoPlay, false);
+                this.globalJSON.put(this.hideStatusBar, false);
+                this.globalJSON.put(this.hideBottomTab, true);
+                this.globalJSON.put(this.hideTopTab, true);
+                this.globalJSON.put(this.hideRightMenu, true);
+                break;
+            case "Telegram.json":
+                this.globalJSON.put(this.storageRedirect, false);
+                this.globalJSON.put(this.delNomedia, false);
+                this.globalJSON.put(this.unRecalled, false);
+                this.globalJSON.put(this.unDelete, false);
+                break;
+            case "HookBox.json":
+                this.globalJSON.put(this.isTikTok, false);
+                this.globalJSON.put(this.isTelegram, false);
+                this.globalJSON.put(this.isFirst, true);
 
+                break;
         }
 
         File jsonFile = new File(rootPath, jsonFilename);
@@ -128,10 +134,18 @@ public class Config extends FileProvider {
             outStream.close();
         }
         Iterator<String> keys = this.globalJSON.keys();
+        try{
         while (keys.hasNext()) {
             if (!readPref().has(keys.next())) {
                 jsonFile.delete();
             }
+        }
+
+        }
+        catch(Exception e){
+            jsonFile.delete();
+            initPref();
+            Toast.makeText(mContext,"配置文件损坏，需要重新配置。",Toast.LENGTH_SHORT).show();
         }
     }
 

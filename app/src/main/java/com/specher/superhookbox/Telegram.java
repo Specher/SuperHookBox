@@ -1,6 +1,9 @@
 package com.specher.superhookbox;
 
+import android.app.Activity;
 import android.content.Context;
+import android.os.Build;
+import android.view.WindowManager;
 
 import org.json.JSONObject;
 
@@ -17,11 +20,20 @@ public class Telegram {
     private Config config;
     private JSONObject pref;
 
-    public void hook(Context context, XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
+    public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
         Utils.log("Telegram loaded");
         config = new Config(context, "Telegram.json");
         pref = config.readPref();
 
+
+        //刷新配置
+        XposedHelpers.findAndHookMethod(Activity.class, "onResume", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                pref = config.readPref();
+                super.afterHookedMethod(param);
+            }
+        });
 
         //重定向存储
         XposedBridge.hookAllConstructors(XposedHelpers.findClass("java.io.File", loadPackageParam.classLoader), new XC_MethodHook() {
@@ -79,7 +91,7 @@ public class Telegram {
         XposedBridge.hookAllMethods(cls, "markMessagesAsDeleted", new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                if (pref.getBoolean(config.Unrecalled)) {
+                if (pref.getBoolean(config.unRecalled)) {
                     if (param.args[0] instanceof ArrayList) {
 //                        ArrayList r25 = (ArrayList) param.args[0];
 //                        if (r25.size() > 0) {
@@ -97,6 +109,54 @@ public class Telegram {
 
 
         });
+
+        //阻止自毁
+        Class <?> MessagesController = XposedHelpers.findClass("org.telegram.messenger.MessagesController", loadPackageParam.classLoader);
+        XposedBridge.hookAllMethods(MessagesController, "getNewDeleteTask", new XC_MethodReplacement() {
+            @Override
+            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    Utils.log("tghook:阻止自毁");
+                }else{
+                    XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
+                }
+                return null;
+            }
+        });
+
+//        //可转发
+       Class <?> MessageObject = XposedHelpers.findClass("org.telegram.messenger.MessageObject", loadPackageParam.classLoader);
+//        XposedBridge.hookAllMethods(MessageObject, "canForwardMessage", new XC_MethodHook() {
+//            @Override
+//            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+//                param.setResult(true);
+//                Utils.log("tghook:转发");
+//                super.beforeHookedMethod(param);
+//            }
+//        });
+
+        //让自毁图片正常显示
+        XposedBridge.hookAllMethods(MessageObject, "isSecretMedia", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(false);
+                }
+
+                super.beforeHookedMethod(param);
+            }
+        });
+        XposedBridge.hookAllMethods(MessageObject, "isSecretPhotoOrVideo", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(false);
+
+                }
+                super.beforeHookedMethod(param);
+            }
+        });
+
 
     }
 }
