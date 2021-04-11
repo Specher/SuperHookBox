@@ -5,11 +5,12 @@
 请使用本工程的项目注明出处
 ------
 联系方式：
+
 Telegram:@HookBox(https://t.me/HookBox)
 
 E-mail:Specher@qq.com
 # Features
  - 抖音无水印下载/全屏播放
- - Telegram重定向/防撤回消息
+ - Telegram存储重定向/防撤回消息/阻止阅后即焚
 # License
 [GPL-3.0](LICENSE)
