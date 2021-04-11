@@ -18,27 +18,25 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class Tiktok {
-    public  Activity mActivity;
-    public  JSONObject checks;
+    public Activity mActivity;
+    public JSONObject checks;
     public static String configName = "tiktok.json";
-    public  Config config;
-    public  Object VideoViewHolder;
-    private  Class<?> hookClass_DisLikeAwemeLayout;
-    private  Class<?> hookClass_LongPressLayout;
-    private  Class<?> hookClass_com_VideoViewHolder;
-    private  Class<?> hookClass_MainFragment;
-    private  Class<?> hookClass_VideoModle;
-    private  Class<?> hookClass_BaseListFragmentPanel;
-    private  boolean isHide=false;
-
+    public Config config;
+    public Object VideoViewHolder;
+    private Class<?> hookClass_DisLikeAwemeLayout;
+    private Class<?> hookClass_LongPressLayout;
+    private Class<?> hookClass_com_VideoViewHolder;
+    private Class<?> hookClass_MainFragment;
+    private Class<?> hookClass_VideoModle;
+    private Class<?> hookClass_BaseListFragmentPanel;
+    private boolean isHide = false;
+    private String lastPlaytime="0";
 
     public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
-
-
         int versionCode = Utils.getPackageVersionCode(loadPackageParam);
-
+        Utils.log("douyin version:" + versionCode);
         try {
-            if (versionCode == 150102 || versionCode == 150301) {
+            if (versionCode <= 150301) {
                 hookClass_LongPressLayout = loadPackageParam.classLoader.loadClass("com.ss.android.ugc.aweme.feed.ui.LongPressLayout$2");
                 hookClass_DisLikeAwemeLayout = loadPackageParam.classLoader.loadClass("com.ss.android.ugc.aweme.feed.ui.DisLikeAwemeLayout");
                 hookClass_com_VideoViewHolder = loadPackageParam.classLoader.loadClass("com.ss.android.ugc.aweme.feed.adapter.VideoViewHolder");
@@ -49,15 +47,12 @@ public class Tiktok {
         } catch (Exception e) {
             Utils.log(e.getMessage());
         }
-
-        Utils.log("tiktokhook:version:" + versionCode);
         config = new Config(context, configName);
         checks = config.readPref();
         XposedHelpers.findAndHookMethod("com.ss.android.ugc.aweme.main.MainActivity", loadPackageParam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
             public void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
                 mActivity = (Activity) param.thisObject;
-
                 if (hookClass_DisLikeAwemeLayout == null) {
                     Toast.makeText(mActivity, "抖X插件:不支持当前版本。", Toast.LENGTH_LONG).show();
                 } else {
@@ -67,20 +62,18 @@ public class Tiktok {
                         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             VideoViewHolder = param.thisObject;
                             Utils.log("拿到：" + VideoViewHolder);
-
                             XposedHelpers.callMethod(VideoViewHolder, "l", checks.getBoolean(config.hideRightMenu));
-
-
                             super.afterHookedMethod(param);
                         }
                     });
 
-                   //自动播放
+                    //自动播放
                     XposedHelpers.findAndHookMethod(hookClass_BaseListFragmentPanel, "onPlayCompletedFirstTime", String.class, new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-
-                            if (checks.getBoolean(config.isAutoPlay)) {
+                            //防止连续触发两次
+                            if (checks.getBoolean(config.isAutoPlay)&& !lastPlaytime.equals(param.args[0])) {
+                                lastPlaytime = (String) param.args[0];
                                 Utils.log("param:" + param.args[0] + "播放一次");
                                 Object mViewPager = XposedHelpers.getObjectField(param.thisObject, "mViewPager");
                                 XposedHelpers.callMethod(mViewPager, "setCurrentItem", (int) XposedHelpers.callMethod(mViewPager, "getCurrentItem") + 1);
@@ -124,19 +117,16 @@ public class Tiktok {
                                 LinearLayout mPagerTabStrip = null;
                                 View a = null, b = null, c = null;
                                 if (checks.getBoolean(config.hideTopTab)) {
-                                        //个人视频MyProfileFragment没有这个Tab,所以过滤一下防止报错
-                                        if(mMainFragment.getClass().equals( hookClass_MainFragment)) {
-
-                                            mPagerTabStrip = (LinearLayout) XposedHelpers.getObjectField(mMainFragment, "mPagerTabStrip");
-
-                                            //顶部故事和相机按钮
-                                            a = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStoryCamera");
-                                            b = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStorySwitch");
-                                            //顶部搜索按钮
-                                            c = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnSearch");
-                                        }
-
+                                    //个人视频MyProfileFragment没有这个Tab,所以过滤一下防止报错
+                                    if (mMainFragment.getClass().equals(hookClass_MainFragment)) {
+                                        mPagerTabStrip = (LinearLayout) XposedHelpers.getObjectField(mMainFragment, "mPagerTabStrip");
+                                        //顶部故事和相机按钮
+                                        a = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStoryCamera");
+                                        b = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnStorySwitch");
+                                        //顶部搜索按钮
+                                        c = (View) XposedHelpers.getObjectField(mMainFragment, "mIvBtnSearch");
                                     }
+                                }
 
                                 //隐藏通知栏
                                 if (checks.getBoolean(config.hideStatusBar))
@@ -153,7 +143,7 @@ public class Tiktok {
                                         b.setVisibility(View.GONE);
                                         c.setVisibility(View.GONE);
                                     }
-                                    isHide=true;
+                                    isHide = true;
                                 } else {
                                     if (mPagerTabStrip != null)
                                         mPagerTabStrip.setVisibility(View.VISIBLE);
@@ -164,8 +154,8 @@ public class Tiktok {
                                         b.setVisibility(View.VISIBLE);
                                         c.setVisibility(View.VISIBLE);
                                     }
-                                        XposedHelpers.callMethod(mActivity, "showStatusBar");
-                                    isHide=false;
+                                    XposedHelpers.callMethod(mActivity, "showStatusBar");
+                                    isHide = false;
                                 }
                             } else {
                                 XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
@@ -175,6 +165,16 @@ public class Tiktok {
                     });
 
                 }
+            }
+        });
+        XposedHelpers.findAndHookMethod("com.ss.android.ugc.aweme.main.MainActivity", loadPackageParam.classLoader, "onResume", new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                //刷新配置
+                if(config!=null){
+                    checks = config.readPref();
+                }
+                super.afterHookedMethod(param);
             }
         });
 

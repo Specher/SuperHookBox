@@ -253,6 +253,18 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    protected void onResume() {
+        if(config!=null){
+            try {
+                checks = config.readPref();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        super.onResume();
+    }
+
     void initView() throws Exception {
         config = new Config(MainActivity.this, "HookBox.json");
         checks = config.readPref();
@@ -300,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     *  动态获取存储权限
+     * 动态获取存储权限
      *
      * @param activity activity
      */
