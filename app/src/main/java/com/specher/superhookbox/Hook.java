@@ -15,7 +15,9 @@ public class Hook implements IXposedHookLoadPackage {
     private Context context;
 
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
-        if (loadPackageParam.packageName.equals("org.telegram.messenger") || loadPackageParam.packageName.equals("org.telegram.plus") || loadPackageParam.packageName.equals("nekox.messenger") || loadPackageParam.packageName.equals("org.telegram.messengers")) {
+        if (loadPackageParam.packageName.equals("org.telegram.messenger") || loadPackageParam.packageName.equals("org.telegram.plus") ||
+                loadPackageParam.packageName.equals("nekox.messenger") || loadPackageParam.packageName.equals("org.telegram.messengers")||
+                loadPackageParam.packageName.equals("org.telegram.messenger.beta") || loadPackageParam.packageName.equals("tw.nekomimi.nekogram")) {
             if (config == null) {
                 context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
                 config = new Config(context, configName);

@@ -1,6 +1,7 @@
 package com.specher.superhookbox;
 
 import java.io.File;
+import java.lang.reflect.Method;
 
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -55,7 +56,26 @@ public class Utils {
      * @param log
      */
     public static void log(String log) {
-        XposedBridge.log(TAG + log);
+        XposedBridge.log(TAG + ":" + log);
+    }
+
+
+    /**
+     * 通过返回值查找方法
+     * @param className
+     * @param returnType
+     * @return
+     */
+    public static Method findMethodbyReturnType(Class<?> className, String returnType) {
+        Method[] methods = className.getDeclaredMethods();
+        for (Method method : methods) {
+            //通过返回值类型来寻找方法
+            if (method.getReturnType().getName().equals(returnType)) {
+                Utils.log("find method success");
+                return method;
+            }
+        }
+            return null;
     }
 
 }

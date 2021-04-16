@@ -227,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
         alertDialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "我摊牌了，我是富二代，不需要捐赠，你的好意我心领了。", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "我摊牌了，我是富二代，此软件不盈利，不需要捐赠，你的好意我心领了。", Toast.LENGTH_LONG).show();
             }
         });
     }

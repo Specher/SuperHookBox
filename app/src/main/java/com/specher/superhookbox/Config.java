@@ -19,16 +19,17 @@ import java.util.Iterator;
 
 public class Config extends FileProvider {
     public static File rootPath = new File(Environment.getExternalStorageDirectory() + "/Documents");
-    public final String tiktokShow = "抖音自动播放/去水印/全屏\n支持抖音版本:15.1.1精简版\n目前隐藏右侧按钮和文字开启后需要点返回显示，不过隐藏了也可以点到评论按钮。暂时这样写省点时间，以后会改成长按切换隐藏显示";
+    public final String tiktokShow = "抖音自动播放/去水印/全屏\n支持抖音版本:15.X以及15.X精简版";
     public final String telegramShow = "重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
             "开启删除.nomedia可以让文件夹在相册中出现，方便同步到云端。\n" +
             "阻止删除消息重新打开聊天界面删除的消息即会出现。\n" +
-            "支持版本：Telegram官方版/TG Plus/Nekogram X/Telegram科学版";
+            "支持版本：Telegram官方版/Beta版/科学版/TG Plus/Nekogram/Nekogram X";
     private final String jsonFilename;
     public JSONObject globalJSON = new JSONObject();
     public String isTikTok = "开启抖X功能";
     public String isAutoPlay = "自动播放下一条";
     public String downLoadVideo = "无水印下载";
+    public String jumpAD = "跳过视频广告";
     public String hideRightMenu = "隐藏右侧按钮和文字";
     public String fullVideoPlay = "长按切换全屏模式";
     public String hideStatusBar = "全屏时隐藏状态栏";
@@ -107,6 +108,7 @@ public class Config extends FileProvider {
             case "tiktok.json":
                 this.globalJSON.put(this.isAutoPlay, false);
                 this.globalJSON.put(this.downLoadVideo, false);
+                this.globalJSON.put(this.jumpAD, false);
                 this.globalJSON.put(this.fullVideoPlay, false);
                 this.globalJSON.put(this.hideStatusBar, false);
                 this.globalJSON.put(this.hideBottomTab, true);
