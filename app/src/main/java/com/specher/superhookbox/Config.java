@@ -2,6 +2,8 @@ package com.specher.superhookbox;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
@@ -25,7 +27,7 @@ import java.util.List;
 public class Config extends FileProvider {
     public File rootPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
     private  int count=0;
-    public final String tiktokShow = "抖音自动播放/去水印/全屏\n支持抖音版本:15.X以及15.X精简版";
+    public final String tiktokShow = "支持版本:15.X以及15.X精简版";
     public final String telegramShow = "重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
             "开启删除.nomedia可以让文件夹在相册中出现，方便同步到云端。\n" +
             "阻止删除消息重新打开聊天界面删除的消息即会出现。\n" +
@@ -46,7 +48,7 @@ public class Config extends FileProvider {
     public String delNomedia = "删除.nomedia文件";
     public String unRecalled = "阻止删除消息";
     public String unDelete = "阻止消息自毁(阅后即焚)";
-    public String isFirst = "首次启动";
+    public String isFirst = "首次启动"+BuildConfig.VERSION_CODE;
     private final Context mContext;
 
     Config(Context context, String jsonFilename) throws Exception {
@@ -105,6 +107,7 @@ public class Config extends FileProvider {
     }
 
     private void initPref() throws Exception {
+
         Log.i("HookBox",rootPath.getPath());
         if (!rootPath.exists()) {
           if(!rootPath.mkdir()){

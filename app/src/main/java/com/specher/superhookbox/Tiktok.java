@@ -43,11 +43,11 @@ public class Tiktok {
     public View llAwemeIntro;
     public View mMusicCoverLayout;
     private String downloadAddr;
-    private boolean isDouyinLite;
+    private boolean isLite;
 
     public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
         final int versionCode = Utils.getPackageVersionCode(loadPackageParam);
-        Utils.log("douyin version:" + versionCode);
+        Utils.log("version:" + versionCode);
             hookClass_LongPressLayout = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.ui.LongPressLayout$2",loadPackageParam.classLoader);
             hookClass_VideoViewHolder = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.adapter.VideoViewHolder",loadPackageParam.classLoader);
             hookClass_MainFragment = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.main.MainFragment",loadPackageParam.classLoader);
@@ -75,7 +75,7 @@ public class Tiktok {
                     if(onPlayCompletedFirstTime!=null){
                         //15.3.0及以下精简版
                         //自动播放
-                        isDouyinLite = true;
+                        isLite = true;
                         XposedBridge.hookMethod(onPlayCompletedFirstTime, new XC_MethodHook() {
                             @Override
                             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -245,7 +245,7 @@ public class Tiktok {
                                 View a = null, b = null, c = null;
                                 //底部TabView
                                 FrameLayout mMainBottomTabView = null;
-                                if(isDouyinLite) {
+                                if(isLite) {
                                 if (checks.getBoolean(config.hideTopTab)) {
                                     //判断是否是首页Fragment)
                                     if (mCurFragment.getClass().equals(hookClass_MainFragment)) {

@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
-    private void showAbout() throws PackageManager.NameNotFoundException {
+    private void showAbout() throws PackageManager.NameNotFoundException, JSONException {
         PackageManager pm = getPackageManager();
         PackageInfo pi = pm.getPackageInfo(getPackageName(), 0);//getPackageName()是你当前类的包名，0代表是获取版本信息
         String name = pi.versionName;
@@ -217,28 +217,54 @@ public class MainActivity extends AppCompatActivity {
                 "<p>Specher制作 E-mail:<a href=\"mailto:Specher@qq.com\">Specher@qq.com</a></p>" +
                 "<p>获取更新/反馈请加TG频道：<a href=\"https://t.me/Hookbox\">@HookBox</a></p>" +
                 "<p>GitHub开源：<a href=\"https://github.com/Specher/SuperHookBox\">@SuperHookBox</a></p>" +
-                "<p><font color=\"#FF0000\">免费软件，仅供学习和娱乐使用，请勿用于商业用途或传播，否则后果自负。</font></p>"));
+                "<p><font color=\"#FF0000\" size=\"24\"><b>免责声明及使用协议：</b></font></p><p><font color=\"#FF0000\">此软件是免费软件，仅供学习交流，严禁用于商业用途或传播，否则后果自负。若用户利用本软件从事任何违法或侵权行为，由用户自行承担全部责任。本软件作者不承担任何法律及连带责任。因此给作者或任何第三方造成的任何损失，用户应负责全额赔偿。</font></p>"));
         textView.setMovementMethod(LinkMovementMethod.getInstance());
-        builder.setView(textView);
+        final CheckBox checkBox = new CheckBox(this);
+        checkBox.setText("我已阅读并同意该协议");
+
+        LinearLayout linearLayout = new LinearLayout(this);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.addView(textView);
+        linearLayout.addView(checkBox);
+        builder.setView(linearLayout);
         builder.setCancelable(false);
-        builder.setNeutralButton("捐赠", null);
-        builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                Message msg = mHandler.obtainMessage();
-                msg.what = 1;
-                mHandler.sendMessage(msg);
-            }
-        });
-        AlertDialog alertDialog = builder.create();
+        builder.setPositiveButton("确认", null);
+        if(checks.getBoolean(config.isFirst)) {
+            builder.setNeutralButton("拒绝", null);
+        }
+        final AlertDialog alertDialog = builder.create();
         alertDialog.show();
-        alertDialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+        if(!checks.getBoolean(config.isFirst)){
+            checkBox.setChecked(true);
+            checkBox.setText("您已同意该协议");
+            checkBox.setClickable(false);
+        }else{
+            alertDialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(MainActivity.this, "由于您拒绝了协议，无法继续使用本软件。", Toast.LENGTH_LONG).show();
+                    MainActivity.this.finish();
+                }
+            });
+        }
+
+        alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "我摊牌了，我是富二代，此软件不盈利，不需要捐赠，你的好意我心领了。", Toast.LENGTH_LONG).show();
+                        if(checkBox.isChecked()) {
+                            Message msg = mHandler.obtainMessage();
+                            msg.what = 1;
+                            mHandler.sendMessage(msg);
+                            alertDialog.dismiss();
+                        }else{
+                            Toast.makeText(MainActivity.this,"请阅读协议并勾选同意后方可使用本软件",Toast.LENGTH_LONG).show();
+
+            }
             }
         });
+
     }
+
 
     @SuppressLint("NonConstantResourceId")
     @Override
