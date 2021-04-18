@@ -1,7 +1,11 @@
 package com.specher.superhookbox;
 
+import android.app.ActivityManager;
+import android.content.Context;
+
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
@@ -77,5 +81,16 @@ public class Utils {
         }
             return null;
     }
+
+    public static void exitApp(Context context){
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        List<ActivityManager.AppTask> appTaskList = activityManager.getAppTasks();
+        for (ActivityManager.AppTask appTask : appTaskList) {
+            appTask.finishAndRemoveTask();
+        }
+        android.os.Process.killProcess(android.os.Process.myPid());
+        System.exit(0);
+    }
+
 
 }

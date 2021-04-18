@@ -6,10 +6,10 @@ android {
 
     defaultConfig {
         applicationId "com.specher.superhookbox"
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 30
-        versionCode 7
-        versionName "3.4"
+        versionCode 8
+        versionName "3.4.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -6,7 +6,9 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -36,6 +38,7 @@ public class Tiktok {
 
     private boolean isHide = false;
     private String lastPlaytime="0";
+    private long lastPlay=-1;
     public View llRightMenu;
     public View llAwemeIntro;
     public View mMusicCoverLayout;
@@ -120,15 +123,30 @@ public class Tiktok {
                                 super.afterHookedMethod(param);
                                 //com.ss.android.ugc.aweme.shortvideo.f.i VideoPlayerStatus=7代表播放完成
                                 String filedName = XposedHelpers.findFirstFieldByExactType(param.args[0].getClass(),int.class).getName();
-                                if (XposedHelpers.getIntField(param.args[0], filedName) == 7) {
+
+                                if (checks.getBoolean(config.isAutoPlay) && XposedHelpers.getIntField(param.args[0], filedName) == 7 ) {
                                     //VerticalViewPager
                                     String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(param.thisObject.getClass(),
                                             XposedHelpers.findClass("com.ss.android.ugc.aweme.common.widget.VerticalViewPager",loadPackageParam.classLoader)).getName();
                                     Object mViewPager = XposedHelpers.getObjectField(param.thisObject, VerticalViewPagerfiledName);
-                                    Utils.log("mViewPager:"+mViewPager);
                                     int currItem = (Integer) XposedHelpers.callMethod(mViewPager, "getCurrentItem");
                                     XposedHelpers.callMethod(mViewPager, "setCurrentItem", currItem + 1);
+
                                 }
+                            }
+                        });
+
+                        //自动播放
+                        XposedBridge.hookAllMethods(hookClass_BaseListFragmentPanel,"onVideoEvent", new XC_MethodHook() {
+                            public void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                super.afterHookedMethod(param);
+                                //com.ss.android.ugc.aweme.shortvideo.f.i VideoPlayerStatus=7代表播放完成
+                                Class<?> Aweme = XposedHelpers.findClass("com.ss.android.ugc.aweme.feed.model.Aweme",loadPackageParam.classLoader);
+                                String filedName = XposedHelpers.findFirstFieldByExactType(param.args[0].getClass(),Aweme).getName();
+                                Object oAweme = XposedHelpers.getObjectField(param.args[0],filedName);
+                                Utils.log("aweme:"+oAweme);
+
+
                             }
                         });
 
@@ -145,11 +163,10 @@ public class Tiktok {
                                     //FeedRecommendFragment
                                     Object FeedRecommendFragment = XposedHelpers.callMethod(mCurFragment,"a");
                                     //BaseListFragmentPanel
-                                    Object baseListFragmentPanel = null;
-                                    XposedHelpers.callMethod(FeedRecommendFragment,
+                                    Object baseListFragmentPanel = XposedHelpers.callMethod(FeedRecommendFragment,
                                             Utils.findMethodbyReturnType(FeedRecommendFragment.getClass(),hookClass_BaseListFragmentPanel.getName()).getName());
                                     //VerticalViewPager
-                                    String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(param.thisObject.getClass(),
+                                    String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(hookClass_BaseListFragmentPanel.getClass(),
                                             XposedHelpers.findClass("com.ss.android.ugc.aweme.common.widget.VerticalViewPager",loadPackageParam.classLoader)).getName();
                                     Object mViewPager = XposedHelpers.getObjectField(baseListFragmentPanel, VerticalViewPagerfiledName);
                                     int currItem = (Integer) XposedHelpers.callMethod(mViewPager, "getCurrentItem");
@@ -187,7 +204,6 @@ public class Tiktok {
                                         downloadAddr=urlList.get(0);
                                         //Utils.log("DownloadInfo:downloadAddr" + downloadAddr);
                                     }
-
                                 }
                                 super.afterHookedMethod(param);
                             }
@@ -258,8 +274,6 @@ public class Tiktok {
                                     mMainBottomTabView = (FrameLayout) XposedHelpers.getObjectField(MainPageFragment,"mMainBottomTabView");
                                 }
 
-
-
                                 //隐藏切换
                                 if (!isHide) {
                                     //隐藏通知栏
@@ -308,6 +322,7 @@ public class Tiktok {
                         }
                     });
 
+
                 }
             }
         });
@@ -318,6 +333,7 @@ public class Tiktok {
                 if(config!=null){
                     checks = config.readPref();
                 }
+                //mActivity.getWindow().getDecorView().setSystemUiVisibility(2822);
                 super.afterHookedMethod(param);
             }
         });

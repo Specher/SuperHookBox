@@ -1,10 +1,13 @@
 package com.specher.superhookbox;
 
+import android.app.ActivityManager;
 import android.content.Context;
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 
 import org.json.JSONException;
@@ -15,10 +18,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Method;
 import java.util.Iterator;
+import java.util.List;
 
 public class Config extends FileProvider {
-    public static File rootPath = new File(Environment.getExternalStorageDirectory() + "/Documents");
+    public File rootPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+    private  int count=0;
     public final String tiktokShow = "抖音自动播放/去水印/全屏\n支持抖音版本:15.X以及15.X精简版";
     public final String telegramShow = "重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
             "开启删除.nomedia可以让文件夹在相册中出现，方便同步到云端。\n" +
@@ -99,6 +105,7 @@ public class Config extends FileProvider {
     }
 
     private void initPref() throws Exception {
+        Log.i("HookBox",rootPath.getPath());
         if (!rootPath.exists()) {
           if(!rootPath.mkdir()){
               Toast.makeText(mContext,"配置文件夹创建失败。",Toast.LENGTH_SHORT).show();
@@ -142,13 +149,19 @@ public class Config extends FileProvider {
                 jsonFile.delete();
             }
         }
-
         }
         catch(Exception e){
+            Log.i("HookBox",e.getMessage());
+            Toast.makeText(mContext,"配置文件损坏，需要重新配置。"+e.toString(),Toast.LENGTH_LONG).show();
+            count++;
+            if(count>2){
+                Utils.exitApp(mContext);
+            }else{
             jsonFile.delete();
             initPref();
-            Toast.makeText(mContext,"配置文件损坏，需要重新配置。",Toast.LENGTH_SHORT).show();
+            }
         }
     }
+
 
 }
