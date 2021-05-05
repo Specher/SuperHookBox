@@ -3,16 +3,22 @@ package com.specher.superhookbox;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.reflect.Method;
@@ -27,7 +33,6 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class Tiktok {
     public Activity mActivity;
     public JSONObject checks;
-    public static String configName = "tiktok.json";
     public Config config;
     private Class<?> hookClass_LongPressLayout;
     private Class<?> hookClass_VideoViewHolder;
@@ -35,17 +40,24 @@ public class Tiktok {
     private Class<?> hookClass_VideoModle;
     private Class<?> hookClass_BaseListFragmentPanel;
     private Class<?> hookClass_FeedApi;
+    private Class<?> hookClass_Adaptation;
+    private Class<?> hookClass_CommentColorViewModel;
+    private String paramBottomBar;
+    private String paramStatusBar;
+    private String methodCommentDark;
+    private Class<?> hookClass_SplashAdActivity;
 
     private boolean isHide = false;
     private String lastPlaytime="0";
     private long lastPlay=-1;
+    private String lastJumpAid="0";
     public View llRightMenu;
     public View llAwemeIntro;
     public View mMusicCoverLayout;
     private String downloadAddr;
     private boolean isLite;
 
-    public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
+    public void hook(final Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
         final int versionCode = Utils.getPackageVersionCode(loadPackageParam);
         Utils.log("version:" + versionCode);
             hookClass_LongPressLayout = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.ui.LongPressLayout$2",loadPackageParam.classLoader);
@@ -54,17 +66,35 @@ public class Tiktok {
             hookClass_VideoModle = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.model.Video",loadPackageParam.classLoader);
             hookClass_BaseListFragmentPanel = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.panel.BaseListFragmentPanel",loadPackageParam.classLoader);
             hookClass_FeedApi = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.api.FeedApi",loadPackageParam.classLoader);
+            hookClass_SplashAdActivity =XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.splash.SplashAdActivity",loadPackageParam.classLoader);
+
             if (hookClass_BaseListFragmentPanel == null ) {
-                //测试到150501
+
                 //BaseListFragmentPanel类被混淆了，可以搜索compiled from: BaseListFragmentPanel
-                hookClass_BaseListFragmentPanel = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.panel.b",loadPackageParam.classLoader);
+                if(versionCode==150701){
+                    hookClass_BaseListFragmentPanel = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.panel.c",loadPackageParam.classLoader);
+                }else{
+                    //150301-150601
+                    hookClass_BaseListFragmentPanel = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.panel.b",loadPackageParam.classLoader);
+                }
+                //去黑边只支持15.6.0
+                hookClass_Adaptation = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.adaptation.f",loadPackageParam.classLoader);
+                paramBottomBar="j";
+                paramStatusBar="i";
+                methodCommentDark="a";
+                hookClass_CommentColorViewModel = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.comment.viewmodel.CommentColorViewModel",loadPackageParam.classLoader);
             }
 
-        config = new Config(context, configName);
+
+        config = new Config(context,Config.getConfigName(Config.isTikTok));
         checks = config.readPref();
         XposedHelpers.findAndHookMethod("com.ss.android.ugc.aweme.main.MainActivity", loadPackageParam.classLoader, "onCreate", Bundle.class, new XC_MethodHook() {
             public void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
+                if(mActivity!=null){
+                    mActivity = (Activity) param.thisObject;
+                    return;//防止退出MainActivity之后的重复hook
+                }
                 mActivity = (Activity) param.thisObject;
                 if (hookClass_LongPressLayout == null) {
                     Toast.makeText(mActivity, "抖X插件:不支持当前版本:"+versionCode, Toast.LENGTH_LONG).show();
@@ -123,7 +153,6 @@ public class Tiktok {
                                 super.afterHookedMethod(param);
                                 //com.ss.android.ugc.aweme.shortvideo.f.i VideoPlayerStatus=7代表播放完成
                                 String filedName = XposedHelpers.findFirstFieldByExactType(param.args[0].getClass(),int.class).getName();
-
                                 if (checks.getBoolean(config.isAutoPlay) && XposedHelpers.getIntField(param.args[0], filedName) == 7 ) {
                                     //VerticalViewPager
                                     String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(param.thisObject.getClass(),
@@ -131,61 +160,76 @@ public class Tiktok {
                                     Object mViewPager = XposedHelpers.getObjectField(param.thisObject, VerticalViewPagerfiledName);
                                     int currItem = (Integer) XposedHelpers.callMethod(mViewPager, "getCurrentItem");
                                     XposedHelpers.callMethod(mViewPager, "setCurrentItem", currItem + 1);
-
                                 }
-                            }
-                        });
-
-                        //自动播放
-                        XposedBridge.hookAllMethods(hookClass_BaseListFragmentPanel,"onVideoEvent", new XC_MethodHook() {
-                            public void afterHookedMethod(MethodHookParam param) throws Throwable {
-                                super.afterHookedMethod(param);
-                                //com.ss.android.ugc.aweme.shortvideo.f.i VideoPlayerStatus=7代表播放完成
-                                Class<?> Aweme = XposedHelpers.findClass("com.ss.android.ugc.aweme.feed.model.Aweme",loadPackageParam.classLoader);
-                                String filedName = XposedHelpers.findFirstFieldByExactType(param.args[0].getClass(),Aweme).getName();
-                                Object oAweme = XposedHelpers.getObjectField(param.args[0],filedName);
-                                Utils.log("aweme:"+oAweme);
-
-
                             }
                         });
 
                         //跳过视频流广告和隐藏切换辅助
                         XposedBridge.hookAllMethods(mActivity.getClass(), "onVideoPageChangeEvent", new XC_MethodHook() {
                             @Override
-                            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            protected void beforeHookedMethod(final MethodHookParam param) throws Throwable {
                                 //OnVideoPageChangeEvent
                                 //class com.ss.android.ugc.aweme.feed.h.av
                                 //public Aweme a;
-                                Object Aweme = XposedHelpers.getObjectField(param.args[0],"a");
+                                final Object Aweme = XposedHelpers.getObjectField(param.args[0],"a");
                                 Object mCurFragment =   XposedHelpers.callMethod(param.thisObject,"getCurFragment");
-                                if(checks.getBoolean(config.jumpAD)&&(boolean)XposedHelpers.callMethod(Aweme,"isAd")){
+                                String tmpAid  = (String) XposedHelpers.callMethod(Aweme, "getAid");
+                                if(checks.getBoolean(config.jumpAD)&&(boolean)XposedHelpers.callMethod(Aweme,"isAd")&& !lastJumpAid.equals(tmpAid)){
                                     //FeedRecommendFragment
                                     Object FeedRecommendFragment = XposedHelpers.callMethod(mCurFragment,"a");
                                     //BaseListFragmentPanel
                                     Object baseListFragmentPanel = XposedHelpers.callMethod(FeedRecommendFragment,
                                             Utils.findMethodbyReturnType(FeedRecommendFragment.getClass(),hookClass_BaseListFragmentPanel.getName()).getName());
                                     //VerticalViewPager
-                                    String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(hookClass_BaseListFragmentPanel.getClass(),
+                                    String VerticalViewPagerfiledName = XposedHelpers.findFirstFieldByExactType(hookClass_BaseListFragmentPanel,
                                             XposedHelpers.findClass("com.ss.android.ugc.aweme.common.widget.VerticalViewPager",loadPackageParam.classLoader)).getName();
                                     Object mViewPager = XposedHelpers.getObjectField(baseListFragmentPanel, VerticalViewPagerfiledName);
                                     int currItem = (Integer) XposedHelpers.callMethod(mViewPager, "getCurrentItem");
                                     XposedHelpers.callMethod(mViewPager, "setCurrentItem", currItem + 1);
-                                    XposedHelpers.callMethod(param.thisObject,"showCustomToast","跳过广告："+XposedHelpers.callMethod(Aweme,"getDesc"));
-                                   Utils.log("跳过广告："+Aweme);
+                                    lastJumpAid=tmpAid;
+                                   if(checks.getBoolean(config.jumpADTip)) {
+                                       mActivity.runOnUiThread(new Runnable() {
+                                           @Override
+                                           public void run() {
+                                               XposedHelpers.callMethod(param.thisObject, "showCustomToast", "跳过广告：" + XposedHelpers.callMethod(Aweme, "getDesc"));
+                                           }
+                                       });
+                                       Utils.log("跳过广告：" + Aweme);
+                                   }
                                 }
                                 Object  VideoViewHolder =  XposedHelpers.callMethod(param.thisObject, "getCurrentViewHolder");
-                                llRightMenu = (View) XposedHelpers.getObjectField(VideoViewHolder,"llRightMenu");
-                                llAwemeIntro = (View) XposedHelpers.getObjectField(VideoViewHolder,"llAwemeIntro");
-                                mMusicCoverLayout = (View) XposedHelpers.getObjectField(VideoViewHolder,"mMusicCoverLayout");
-                                if(isHide){
-                                    llRightMenu.setAlpha(0);
-                                    llAwemeIntro.setVisibility(View.INVISIBLE);
-                                    mMusicCoverLayout.setVisibility(View.INVISIBLE);
-                                }else{
-                                    llRightMenu.setAlpha(1);
-                                    llAwemeIntro.setVisibility(View.VISIBLE);
-                                    mMusicCoverLayout.setVisibility(View.VISIBLE);
+                                if(VideoViewHolder!=null) {
+                                    llRightMenu = (View) XposedHelpers.getObjectField(VideoViewHolder, "llRightMenu");
+                                    llAwemeIntro = (View) XposedHelpers.getObjectField(VideoViewHolder, "llAwemeIntro");
+                                    mMusicCoverLayout = (View) XposedHelpers.getObjectField(VideoViewHolder, "mMusicCoverLayout");
+
+                                    if(llRightMenu!=null) {
+                                        llAwemeIntro.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                //隐藏切换
+                                                if (isHide) {
+                                                    try {
+                                                        if (checks.getBoolean(config.hideRightMenu)) {
+                                                            llRightMenu.setAlpha(0);
+                                                            mMusicCoverLayout.setVisibility(View.INVISIBLE);
+                                                        }
+                                                        if(checks.getBoolean(config.hideAwemeIntro)){
+                                                            llAwemeIntro.setVisibility(View.INVISIBLE);
+                                                        }
+                                                    } catch (JSONException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                } else {
+                                                    llRightMenu.setAlpha(1);
+                                                    llAwemeIntro.setVisibility(View.VISIBLE);
+                                                    mMusicCoverLayout.setVisibility(View.VISIBLE);
+                                                }
+                                            }
+                                        });
+                                    }
+
+
                                 }
                                 super.beforeHookedMethod(param);
                             }
@@ -208,26 +252,56 @@ public class Tiktok {
                                 super.afterHookedMethod(param);
                             }
                         });
-
                         Class <?> DownloadTask = XposedHelpers.findClassIfExists("com.ss.android.socialbase.downloader.model.DownloadTask",loadPackageParam.classLoader);
-                        XposedHelpers.findAndHookMethod(DownloadTask, "download", new XC_MethodHook() {
-                            @Override
-                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
-                                if(downloadAddr!=null) {
-                                    Object DownloadInfo = XposedHelpers.callMethod(param.thisObject, "getDownloadInfo");
-                                    XposedHelpers.callMethod(DownloadInfo, "setUrl", downloadAddr);
-                                    //Utils.log("DownloadInfo:" + DownloadInfo);
-                                    //XposedHelpers.callMethod(mActivity, "showCustomToast", "已开启无水印下载。");
-                                    Toast.makeText(mActivity,"已开启无水印下载。",Toast.LENGTH_SHORT).show();
-                                    downloadAddr=null;
+                        if(DownloadTask!=null) {
+                            XposedHelpers.findAndHookMethod(DownloadTask, "download", new XC_MethodHook() {
+                                @Override
+                                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                    if (downloadAddr != null) {
+                                        Object DownloadInfo = XposedHelpers.callMethod(param.thisObject, "getDownloadInfo");
+                                        XposedHelpers.callMethod(DownloadInfo, "setUrl", downloadAddr);
+                                        //Utils.log("DownloadInfo:" + DownloadInfo);
+                                        mActivity.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(mActivity, "已开启无水印下载。", Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                        downloadAddr = null;
+                                    }
+                                    super.afterHookedMethod(param);
                                 }
-                                super.afterHookedMethod(param);
-                            }
-                        });
+                            });
+                        }
+
+                        //去黑边
+                        if(hookClass_Adaptation!=null) {
+                            XposedHelpers.findAndHookMethod(hookClass_Adaptation, "run", new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                    if(checks.getBoolean(config.isFullScreen)){
+                                        XposedHelpers.setIntField(param.thisObject, paramStatusBar, 0);
+                                        XposedHelpers.setIntField(param.thisObject, paramBottomBar, 0);
+                                    }
+                                    super.beforeHookedMethod(param);
+                                }
+                            });
+
+                        }
+                        //评论暗黑
+                        if(hookClass_CommentColorViewModel !=null){
+                            XposedHelpers.findAndHookMethod(hookClass_CommentColorViewModel, methodCommentDark, Integer.TYPE,new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                    if(checks.getBoolean(config.isCommentDark)){
+                                        param.args[0] = 2;
+                                    }
+                                    super.beforeHookedMethod(param);
+                                }
+                            });
+                        }
 
                     }
-
 
                     //长按Hook
                     XposedHelpers.findAndHookMethod(hookClass_LongPressLayout, "run", new XC_MethodReplacement() {
@@ -237,8 +311,8 @@ public class Tiktok {
                             Utils.log("触发LongPress");
                             if (checks.getBoolean(config.fullVideoPlay)) {
 
-                                Object mCurFragment =   XposedHelpers.callMethod(mActivity,"getCurFragment");;
-                                Object MainPageFragment =null;
+                                Object mCurFragment =   XposedHelpers.callMethod(mActivity,"getCurFragment");
+                                Object MainPageFragment;
 
                                 //顶部Tab
                                 View mPagerTabStrip = null;
@@ -283,8 +357,10 @@ public class Tiktok {
                                     }
                                     if(checks.getBoolean(config.hideRightMenu)&& llRightMenu!=null){
                                         llRightMenu.setAlpha(0);
-                                        llAwemeIntro.setVisibility(View.INVISIBLE);
                                         mMusicCoverLayout.setVisibility(View.INVISIBLE);
+                                    }
+                                    if(checks.getBoolean(config.hideAwemeIntro)&& llAwemeIntro!=null){
+                                        llAwemeIntro.setVisibility(View.INVISIBLE);
                                     }
                                     if (mPagerTabStrip != null) {
                                         mPagerTabStrip.setVisibility(View.GONE);
@@ -293,7 +369,7 @@ public class Tiktok {
                                         c.setVisibility(View.GONE);
                                     }
                                     if (mMainBottomTabView != null){
-                                        mMainBottomTabView.setVisibility(View.GONE);;
+                                        mMainBottomTabView.setVisibility(View.GONE);
                                     }
                                     isHide = true;
                                 } else {
@@ -304,7 +380,7 @@ public class Tiktok {
                                         c.setVisibility(View.VISIBLE);
                                     }
                                     if (mMainBottomTabView != null) {
-                                        mMainBottomTabView.setVisibility(View.VISIBLE);;
+                                        mMainBottomTabView.setVisibility(View.VISIBLE);
                                     }
                                     if(llRightMenu!=null){
                                         llRightMenu.setAlpha(1);
@@ -326,6 +402,10 @@ public class Tiktok {
                 }
             }
         });
+
+
+
+
         XposedHelpers.findAndHookMethod("com.ss.android.ugc.aweme.main.MainActivity", loadPackageParam.classLoader, "onResume", new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
@@ -333,10 +413,56 @@ public class Tiktok {
                 if(config!=null){
                     checks = config.readPref();
                 }
-                //mActivity.getWindow().getDecorView().setSystemUiVisibility(2822);
                 super.afterHookedMethod(param);
             }
+
         });
+
+        //去开屏广告
+        if(hookClass_SplashAdActivity!=null && checks.getBoolean(config.isJumpSplashAd)){
+
+                    XposedBridge.hookAllMethods(hookClass_SplashAdActivity, "onCreate", new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            ((Activity) param.thisObject).finish();
+                            Utils.log("跳过开屏广告一个");
+                            super.beforeHookedMethod(param);
+                        }
+                    });
+
+
+            XposedHelpers.findAndHookMethod(View.class, "setLayoutParams", ViewGroup.LayoutParams.class, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    if (param.args[0] == null) {
+                        return;
+                    }
+                    final View view = (View) param.thisObject;
+                    if (view instanceof TextView) {
+                        try {
+                            final TextView tmp = (TextView) view;
+                            if (tmp.getText().toString().contains("跳过") ) {
+                                //final ViewGroup.LayoutParams layoutParams = (ViewGroup.LayoutParams) param.args[0];
+                                //final Context context = tmp.getRootView().getContext();
+                                tmp.post(new Runnable() {
+                                    @RequiresApi(api = Build.VERSION_CODES.M)
+                                    @Override
+                                    public void run() {
+                                        tmp.performClick();
+                                    }
+                                });
+                            }
+                        }catch (Exception e){
+                            Utils.log(e.getMessage());
+                        }
+                    }
+                    super.afterHookedMethod(param);
+                }
+
+
+            });
+
+        }
 
 
     }

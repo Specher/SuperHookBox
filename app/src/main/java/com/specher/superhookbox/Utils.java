@@ -2,6 +2,9 @@ package com.specher.superhookbox;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.os.SystemClock;
+import android.view.MotionEvent;
+import android.view.View;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -92,5 +95,23 @@ public class Utils {
         System.exit(0);
     }
 
-
+    /**
+     * 模拟点击某个指定坐标作用在View上
+     * @param view
+     * @param x
+     * @param y
+     */
+    public void clickView(View view, float x, float y)
+    {
+        long downTime = SystemClock.uptimeMillis();
+        final MotionEvent downEvent = MotionEvent.obtain(
+                downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+        downTime+=10;
+        final MotionEvent upEvent = MotionEvent.obtain(
+                downTime, downTime, MotionEvent.ACTION_UP, x, y, 0);
+        view.onTouchEvent(downEvent);
+        view.onTouchEvent(upEvent);
+        downEvent.recycle();
+        upEvent.recycle();
+    }
 }
