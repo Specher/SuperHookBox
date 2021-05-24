@@ -2,6 +2,7 @@ package com.specher.superhookbox;
 
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -27,7 +28,7 @@ import java.util.List;
 public class Config {
     private final File rootPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
     private  int count=0;
-    private static final String tiktokShow = "支持版本:15.X以及15.X精简版";
+    private static final String tiktokShow = "支持版本:15.X-16.X以及15.X精简版";
     private static final String telegramShow = "重定向Telegram缓存文件夹到系统Pictures文件夹，开启后请手动移动SD卡目录下的Telegram文件夹到Pictures中。\n" +
             "开启删除.nomedia可以让文件夹在相册中出现，方便同步到云端。\n" +
             "阻止删除消息重新打开聊天界面删除的消息即会出现。\n" +
@@ -39,11 +40,13 @@ public class Config {
     public JSONObject globalJSON = new JSONObject();
     public static String isTikTok = "开启抖X功能";
     public String isAutoPlay = "自动播放下一条";
+    public String isAutoPlayC = "评论打开时不自动播放下一条";
     public String downLoadVideo = "无水印下载";
     public String isFullScreen = "去除视频黑边";
     public String isJumpSplashAd = "跳过启动广告";
     public String isCommentDark = "评论暗黑模式";
     public String jumpAD = "跳过视频广告";
+    public String jumpLive = "跳过直播";
     public String jumpADTip = "跳过广告时提示";
     public String hideRightMenu = "全屏时隐藏右侧按钮";
     public String hideAwemeIntro = "全屏时隐藏文字";
@@ -147,12 +150,14 @@ public class Config {
         switch (jsonFilename) {
             case configName_tiktok:
                 this.globalJSON.put(this.isAutoPlay, false);
+                this.globalJSON.put(this.isAutoPlayC,false);
                 this.globalJSON.put(this.isFullScreen, true);
                 this.globalJSON.put(this.isCommentDark, false);
                 this.globalJSON.put(this.downLoadVideo, false);
                 this.globalJSON.put(this.isJumpSplashAd, false);
                 this.globalJSON.put(this.jumpAD, false);
                 this.globalJSON.put(this.jumpADTip, false);
+                this.globalJSON.put(this.jumpLive,false);
                 this.globalJSON.put(this.fullVideoPlay, false);
                 this.globalJSON.put(this.hideStatusBar, false);
                 this.globalJSON.put(this.hideBottomTab, true);
