@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="xposed_scope">
+        <item>org.telegram.messenger</item>
+        <item>com.xiaomi.macro</item>
+        <item>com.miui.securitycenter</item>
+        <item>com.ss.android.ugc.aweme</item>
+        <item>cn.nubia.gameassist</item>
+        <item>cn.nubia.gamelauncher</item>
+        <item>cn.nubia.gamehelpmodule</item>
+    </string-array>
+</resources>

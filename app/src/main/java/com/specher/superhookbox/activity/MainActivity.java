@@ -1,20 +1,13 @@
-package com.specher.superhookbox;
+package com.specher.superhookbox.activity;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -30,10 +23,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+
+import com.specher.superhookbox.R;
+import com.specher.superhookbox.Utils;
+import com.specher.superhookbox.XConfig;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,9 +37,7 @@ import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static final String[] PERMISSON_STORAGE = {"android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"};
-    private Config config, mConfig;
+    private XConfig config, mConfig;
     View.OnClickListener button_click = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -53,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
                 final String what = config.getOption((int) v.getTag());
                 Log.i(Utils.TAG, "打开设置");
                 final AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-                    mConfig = new Config(MainActivity.this, Config.getConfigName(what));
+                    mConfig = new XConfig(MainActivity.this.getApplication(), XConfig.getConfigName(what));
                     builder.setTitle(what.replace("开启","")+"插件设置");
                     boolean[] checkItems = new boolean[mConfig.getOptionLength()];
                     try {
@@ -78,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
 
                         }
                     });
+
                     builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             try {
@@ -141,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         try {
-            verifyStoragePermissions(this);
+            initView();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -251,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void initView() throws Exception {
-        config = new Config(MainActivity.this, Config.getConfigName(Config.isHookBox));
+        config = new XConfig(MainActivity.this.getApplication(), XConfig.getConfigName(XConfig.isHookBox));
         checks = config.readPref();
         boolean[] checkItems = new boolean[config.getOptionLength()];
         LinearLayout root = findViewById(R.id.linearlayout);
@@ -296,86 +289,4 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 动态获取存储权限
-     *
-     * @param activity activity
-     */
-    public void verifyStoragePermissions(Activity activity) throws Exception {
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // 先判断有没有权限
-            if (Environment.isExternalStorageManager()) {
-                initView();
-            } else {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, REQUEST_EXTERNAL_STORAGE);
-            }
-        } else {
-            try {
-                int permission = ActivityCompat.checkSelfPermission(activity, "android.permission.WRITE_EXTERNAL_STORAGE");
-                if (permission != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(activity, PERMISSON_STORAGE, REQUEST_EXTERNAL_STORAGE);
-                } else {
-                    initView();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.i("HookBox","requestcode:"+requestCode);
-        if (requestCode == REQUEST_EXTERNAL_STORAGE) {
-                try {
-                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
-                            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                        initView();
-                    }else{
-                        final AlertDialog listDialog = new AlertDialog.Builder(MainActivity.this).create();
-                        listDialog.setTitle("说明");
-                        listDialog.setCancelable(false);
-                        listDialog.setMessage("此模块需要SD卡管理权限以供Hook读取和写入配置，请授权后使用。");
-                        listDialog.setButton(DialogInterface.BUTTON_POSITIVE, "确定", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                                finish();
-                            }
-                        });
-                        listDialog.show();
-                    }
-                    } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_EXTERNAL_STORAGE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()) {
-                try {
-                    initView();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                final AlertDialog listDialog = new AlertDialog.Builder(MainActivity.this).create();
-                listDialog.setTitle("说明");
-                listDialog.setCancelable(false);
-                listDialog.setMessage("此模块需要所有文件管理权限以供Hook读取和写入配置，请授权后使用。");
-                listDialog.setButton(DialogInterface.BUTTON_POSITIVE, "确定", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                finish();
-                    }
-                });
-                listDialog.show();
-            }
-        }
-    }
 }

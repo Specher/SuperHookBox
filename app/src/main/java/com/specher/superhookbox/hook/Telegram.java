@@ -1,9 +1,10 @@
-package com.specher.superhookbox;
+package com.specher.superhookbox.hook;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Build;
-import android.view.WindowManager;
+
+import com.specher.superhookbox.Utils;
+import com.specher.superhookbox.XConfig;
 
 import org.json.JSONObject;
 
@@ -17,14 +18,13 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class Telegram {
-    private Config config;
+    private XConfig config;
     private JSONObject pref;
 
     public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
         Utils.log("Telegram loaded");
-        config = new Config(context, Config.getConfigName(Config.isTelegram));
+        config = new XConfig(context, XConfig.getConfigName(XConfig.isTelegram));
         pref = config.readPref();
-
 
         //刷新配置
         XposedHelpers.findAndHookMethod(Activity.class, "onResume", new XC_MethodHook() {
@@ -35,60 +35,9 @@ public class Telegram {
             }
         });
 
-        //重定向存储
-        XposedBridge.hookAllConstructors(XposedHelpers.findClass("java.io.File", loadPackageParam.classLoader), new XC_MethodHook() {
-            @Override
-            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-
-                if (pref.getBoolean(config.storageRedirect)) {
-
-                    if (param.args[0] instanceof File) {
-                        File f = (File) param.args[0];
-
-                        String newpath1 = f.getPath();
-
-                        if (!newpath1.contains("Pictures")) {
-                            newpath1 = newpath1.replace("Telegram", "Pictures/Telegram");
-                            param.args[0] = new File(newpath1);
-
-
-                            //Utils.log("tghook:replace." + newpath1);
-                        }
-                        if (pref.getBoolean(config.delNomedia)) {
-                            File nomedia = new File(newpath1 + "/.nomedia");
-                            if (nomedia.exists()) {
-                                nomedia.delete();
-                                Utils.log("tghook:删除.nomedia");
-                            }
-
-                            if (param.args.length == 2) {
-                                if (param.args[1] instanceof String) {
-                                    if (param.args[1].equals(".nomedia")) {
-                                        param.args[1] = "";
-                                        Utils.log("tghook:阻止.nomedia");
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-
-
-                        String newpath = (String) param.args[0];
-
-                        if (!newpath.contains("Pictures")) {
-                            newpath = newpath.replace("Telegram", "Pictures/Telegram");
-                            param.args[0] = newpath;
-                        }
-                    }
-                }
-
-                super.beforeHookedMethod(param);
-            }
-        });
-
         //阻止撤回
-        Class<?> cls = XposedHelpers.findClass("org.telegram.messenger.MessagesStorage", loadPackageParam.classLoader);
-        XposedBridge.hookAllMethods(cls, "markMessagesAsDeleted", new XC_MethodReplacement() {
+        Class<?> MessagesStorage = XposedHelpers.findClass("org.telegram.messenger.MessagesStorage", loadPackageParam.classLoader);
+        XposedBridge.hookAllMethods(MessagesStorage, "markMessagesAsDeleted", new XC_MethodReplacement() {
             @Override
             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
                 if (pref.getBoolean(config.unRecalled)) {
@@ -124,16 +73,9 @@ public class Telegram {
             }
         });
 
-//        //可转发
-       Class <?> MessageObject = XposedHelpers.findClass("org.telegram.messenger.MessageObject", loadPackageParam.classLoader);
-//        XposedBridge.hookAllMethods(MessageObject, "canForwardMessage", new XC_MethodHook() {
-//            @Override
-//            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-//                param.setResult(true);
-//                Utils.log("tghook:转发");
-//                super.beforeHookedMethod(param);
-//            }
-//        });
+
+     Class <?> MessageObject = XposedHelpers.findClass("org.telegram.messenger.MessageObject", loadPackageParam.classLoader);
+
 
         //让自毁图片正常显示
         XposedBridge.hookAllMethods(MessageObject, "isSecretMedia", new XC_MethodHook() {
@@ -142,7 +84,15 @@ public class Telegram {
                 if (pref.getBoolean(config.unDelete)) {
                     param.setResult(false);
                 }
-
+                super.beforeHookedMethod(param);
+            }
+        });
+        XposedBridge.hookAllMethods(MessageObject, "needDrawBluredPreview", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(false);
+                }
                 super.beforeHookedMethod(param);
             }
         });
@@ -156,6 +106,54 @@ public class Telegram {
                 super.beforeHookedMethod(param);
             }
         });
+        XposedBridge.hookAllMethods(MessageObject, "isSecretPhotoOrVideo", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(false);
+
+                }
+                super.beforeHookedMethod(param);
+            }
+        });
+        XposedBridge.hookAllMethods(MessageObject, "shouldEncryptPhotoOrVideo", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(false);
+
+                }
+                super.beforeHookedMethod(param);
+            }
+        });
+        XposedBridge.hookAllMethods(MessageObject, "needDrawShareButton", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.unDelete)) {
+                    param.setResult(true);
+
+                }
+                super.beforeHookedMethod(param);
+            }
+        });
+
+
+
+
+
+        Class <?> UserConfig = XposedHelpers.findClass("org.telegram.messenger.UserConfig", loadPackageParam.classLoader);
+        XposedBridge.hookAllMethods(UserConfig, "isPremium", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                if (pref.getBoolean(config.isPremium)) {
+                    param.setResult(true);
+
+                }
+                super.beforeHookedMethod(param);
+            }
+        });
+
+
 
 
     }
