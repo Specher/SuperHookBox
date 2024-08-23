@@ -11,7 +11,8 @@ Telegram:@HookBox(https://t.me/HookBox)
 
 E-mail:Specher@qq.com
 # Features
- - 抖x自动/全屏播放/跳过广告
+ - 小米、红魔一键连招限制解除
  - Telegram存储重定向/防撤回消息/阻止阅后即焚
+
 # License
 [GPL-3.0](LICENSE)
