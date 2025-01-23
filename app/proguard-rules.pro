@@ -21,6 +21,13 @@
 #-renamesourcefileattribute SourceFile
 
 -keep class com.specher.superhookbox.hook.Hook{ *; }
+
+#-keepnames class com.specher.superhookbox.hook.**｛ *; ｝
+
+-keepclassmembers class
+com.specher.superhookbox.hook.** {
+public void hook(...);
+}
 -dontwarn okhttp3.**
 -keep class okhttp3.*{*;}
 

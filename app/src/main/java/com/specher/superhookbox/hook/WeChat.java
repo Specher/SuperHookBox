@@ -51,9 +51,9 @@ public class WeChat {
             this.context = context;
             String apkPath = loadPackageParam.appInfo.sourceDir;
             DexKitBridge bridge = DexKitBridge.create(apkPath);
-  //          hookLog(loadPackageParam.classLoader);
+            //hookLog(loadPackageParam.classLoader);
             //hookAppBrand(loadPackageParam.classLoader);
-            hookC2CMsg(loadPackageParam,bridge);
+            //hookC2CMsg(loadPackageParam,bridge);
             hookCamera(loadPackageParam,bridge);
             }
 
@@ -332,7 +332,6 @@ public class WeChat {
 
 
     /**
-     微信点击账单定位到聊天记录加好友
      版本：8.0.45 t03.p.G5 com.tencent.mm.sdk.platformtools.y2
      版本：8.0.47 q13.p.G5
      版本：8.0.50 c63.p.b7 com.tencent.mm.sdk.platformtools.z2
