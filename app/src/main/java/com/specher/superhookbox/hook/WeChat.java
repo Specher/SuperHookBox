@@ -53,7 +53,6 @@ public class WeChat {
             DexKitBridge bridge = DexKitBridge.create(apkPath);
             //hookLog(loadPackageParam.classLoader);
             //hookAppBrand(loadPackageParam.classLoader);
-            //hookC2CMsg(loadPackageParam,bridge);
             hookCamera(loadPackageParam,bridge);
             }
 
@@ -331,48 +330,7 @@ public class WeChat {
     }
 
 
-    /**
-     版本：8.0.45 t03.p.G5 com.tencent.mm.sdk.platformtools.y2
-     版本：8.0.47 q13.p.G5
-     版本：8.0.50 c63.p.b7 com.tencent.mm.sdk.platformtools.z2
-     版本：8.0.55 z93.p
-     */
-         public void hookC2CMsg(XC_LoadPackage.LoadPackageParam loadPackageParam,DexKitBridge bridge){
-                try {
-                    ClassData classData = findSubCoreRemittanceClass(bridge);
-                    Class<?> SubCoreRemittanceClass = classData.getInstance(loadPackageParam.classLoader);
-                    MethodData methodData = findJsApiOpenC2CTransferMsgViewEventMethod(bridge,SubCoreRemittanceClass);
-                    XposedBridge.hookAllMethods(SubCoreRemittanceClass, methodData.getMethodName(), new XC_MethodHook() {
-                        @Override
-                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                            super.afterHookedMethod(param);
-                            Object jsApiOpenC2CTransferMsgViewEvent = param.args[0];
-                            Object pgVar =XposedHelpers.getObjectField(jsApiOpenC2CTransferMsgViewEvent,"g");
- //                           Context _context = (Context) XposedHelpers.getObjectField(pgVar, "a");
-                            String f332751b = (String) XposedHelpers.getObjectField(pgVar, "b");
-                            String wx_id=(String) XposedHelpers.getObjectField(pgVar, "c");
-                            Utils.log("转账单号:"+f332751b +" 微信id:"+wx_id);
-//                            if(_context == null){
-//                                Class y2=XposedHelpers.findClass("com.tencent.mm.sdk.platformtools.z2",loadPackageParam.classLoader);
-//                                _context= (Context) XposedHelpers.getStaticObjectField(y2,"a");
-//                            }
-                            //3 搜索微信号
-                            //15 搜索手机号
-                            //17 通过名片 需要填写推荐人
-                            //14 通过群
-                            //6 通过朋友验证消息
-                            //13 通讯录
-                            //30 通过扫一扫
-                            Utils.addFriendByWxid(context,wx_id,14,"","",wx_id);
-                        }
-                    });
 
-                }
-                catch (Exception e){
-                    Utils.log("WeChat Hook failed."+e.toString());
-                }
-
-            }
 
 
     private ClassData findSubCoreRemittanceClass(DexKitBridge bridge) {
