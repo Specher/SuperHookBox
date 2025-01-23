@@ -54,9 +54,9 @@ public class Tiktok {
 
 
     public void hook(final Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
+
         final int versionCode = Utils.getPackageVersionCode(loadPackageParam);
         Utils.log("version:" + versionCode);
-        String apkPath = loadPackageParam.appInfo.sourceDir;
 
         hookClass_LongPressLayout = XposedHelpers.findClassIfExists("com.ss.android.ugc.aweme.feed.ui.LongPressLayout$2", loadPackageParam.classLoader);
         config = new XConfig(context, XConfig.getConfigName(XConfig.isTikTok));
@@ -73,8 +73,6 @@ public class Tiktok {
                     Toast.makeText(mActivity, "抖X插件:不支持当前版本:" + versionCode, Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(mActivity, "抖X插件:已加载成功。", Toast.LENGTH_SHORT).show();
-
-
 
                     //长按Hook
                     XposedHelpers.findAndHookMethod(hookClass_LongPressLayout, "run", new XC_MethodReplacement() {

@@ -94,14 +94,6 @@ public class XConfig {
     }
 
 
-
-    private String getConfigDir(Context context){
-        return context.getFilesDir().getAbsolutePath() + "/hookbox";
-
-    }
-
-
-
     public static String getConfigName(String optionName){
         if(optionName.equals(isTikTok)){
             return configName_tiktok;
@@ -161,6 +153,7 @@ public class XConfig {
         return arr;
     }
 
+    @SuppressLint("WorldReadableFiles")
     private void initPref(Context context) throws Exception {
 
         switch (prefFilename) {

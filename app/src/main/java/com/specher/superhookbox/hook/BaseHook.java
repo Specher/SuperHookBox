@@ -8,10 +8,11 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class BaseHook {
 
 
-
-      public void hook(Application app, final XC_LoadPackage.LoadPackageParam loadPackageParam){
+      public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam){
 
       }
+
+
 
 
 

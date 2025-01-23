@@ -3,7 +3,6 @@ package com.specher.superhookbox.hook;
 import android.app.Application;
 import android.content.Context;
 
-import com.specher.superhookbox.BuildConfig;
 import com.specher.superhookbox.Utils;
 import com.specher.superhookbox.XConfig;
 
@@ -20,110 +19,61 @@ public class Hook implements IXposedHookLoadPackage {
     private XConfig config;
     private JSONObject pref;
     private Context context;
-    private Tiktok tiktok;
-    private Telegram telegram;
-    private MiMacro miMacro;
-
-    private WeChat weChat;
-
-    private FaceApp faceApp;
-
-
-    private Nubia nubia;
-
-
-
-
 
     public void handleLoadPackage(final LoadPackageParam loadPackageParam) throws Throwable {
-
-
-        if (loadPackageParam.packageName.equals("org.telegram.messenger") || loadPackageParam.packageName.equals("org.telegram.messenger.web") || loadPackageParam.packageName.equals("org.telegram.plus") ||
-                loadPackageParam.packageName.equals("nekox.messenger") || loadPackageParam.packageName.equals("org.telegram.messengers") ||
-                loadPackageParam.packageName.equals("org.telegram.messenger.beta") || loadPackageParam.packageName.equals("tw.nekomimi.nekogram")) {
-            if (config == null) {
-                context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
-                config = new XConfig(context, XConfig.getConfigName(XConfig.isHookBox));
-                pref = config.readPref();
-            }
-            if (context != null && telegram == null) {
-                if (pref.getBoolean(XConfig.isTelegram)) {
-                    telegram = new Telegram();
-                    telegram.hook(context, loadPackageParam);
-                }
-            }
+        String packageName = loadPackageParam.packageName;
+        String processName = loadPackageParam.processName;
+        if (isTelegramPackage(packageName)) {
+            hookApplicationAttach(loadPackageParam, XConfig.isTelegram, new Telegram());
         }
-
-        if (loadPackageParam.processName.equals("com.ss.android.ugc.aweme")) {
-            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    if (context == null) {
-                        context = (Context) param.args[0];
-
-                        config = new XConfig(context, XConfig.getConfigName(XConfig.isHookBox));
-                        pref = config.readPref();
-                        if (pref.getBoolean(XConfig.isTikTok)) {
-                            tiktok = new Tiktok();
-                            tiktok.hook(context, loadPackageParam);
-                        }
-                    }
-
-                }
-
-            });
+        if (processName.equals("com.ss.android.ugc.aweme")) {
+            hookApplicationAttach(loadPackageParam, XConfig.isTikTok, new Tiktok());
+        }
+        if (packageName.equals("com.miui.securitycenter")) {
+           hookApplicationAttach(loadPackageParam, XConfig.isMiMacro, new MiMacro());
+           // context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
 
         }
-
-
-        if(loadPackageParam.packageName.equals("com.xiaomi.macro") || loadPackageParam.packageName.equals("com.miui.securitycenter")) {
-
-            context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
-            miMacro = new MiMacro();
-            miMacro.hook(context, loadPackageParam);
-
+        if (isNubiaPackage(packageName)) {
+            hookApplicationAttach(loadPackageParam, null, new Nubia());
         }
-
-        if (loadPackageParam.packageName.equals("cn.nubia.gamelauncher") || loadPackageParam.packageName.equals("cn.nubia.gamehelpmodule")|| loadPackageParam.packageName.equals("cn.nubia.gameassist")){
-            context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
-            nubia = new Nubia();
-            nubia.hook(context, loadPackageParam);
+        if (packageName.equals("com.tencent.mm")) {
+            hookApplicationAttach(loadPackageParam, null, new WeChat());
         }
-
-        if(loadPackageParam.packageName.equals("com.tencent.mm")){
-            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
-                @Override
-                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                    super.afterHookedMethod(param);
-                    if (context == null) {
-                        context = (Context) param.args[0];
-                        weChat = new WeChat();
-                        weChat.hook(context, loadPackageParam);
-                    }
-                }
-            });
+        if (packageName.equals("com.quark.browser")) {
+            hookApplicationAttach(loadPackageParam, null, new Quark());
         }
+    }
 
-
-        if(loadPackageParam.packageName.equals("io.faceapp")){
-            context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
-            faceApp = new FaceApp();
-            faceApp.hook(context, loadPackageParam);
-        }
-
-        if(loadPackageParam.packageName.equals("me.duck.hooktest")){
-            context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread"), "getSystemContext");
-
-        }
-
-
-        if(loadPackageParam.packageName.equals("com.android.shell")){
-            new LSPosed().hook(null,loadPackageParam);
-        }
-
-
+    private boolean isTelegramPackage(String packageName) {
+        return packageName.equals("org.telegram.messenger") || packageName.equals("org.telegram.messenger.web") ||
+               packageName.equals("org.telegram.plus") || packageName.equals("nekox.messenger") ||
+               packageName.equals("org.telegram.messengers") || packageName.equals("org.telegram.messenger.beta") ||
+               packageName.equals("tw.nekomimi.nekogram");
     }
 
 
+    private boolean isNubiaPackage(String packageName) {
+        return packageName.equals("cn.nubia.gamelauncher") || packageName.equals("cn.nubia.gamehelpmodule") ||
+               packageName.equals("cn.nubia.gameassist");
+    }
+
+    private void hookApplicationAttach(final LoadPackageParam loadPackageParam, String configKey, Object hookInstanceSupplier) {
+        XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                super.afterHookedMethod(param);
+                if (context == null) {
+                    context = (Context) param.args[0];
+                    if (config == null) {
+                        config = new XConfig(context, XConfig.getConfigName(XConfig.isHookBox));
+                        pref = config.readPref();
+                        if (configKey==null || pref.getBoolean(configKey)) {
+                            XposedHelpers.callMethod(hookInstanceSupplier,"hook",context, loadPackageParam);
+                        }
+                    }
+                }
+            }
+        });
+    }
 }

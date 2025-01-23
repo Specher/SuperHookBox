@@ -2,7 +2,6 @@
 <resources>
     <string-array name="xposed_scope">
         <item>org.telegram.messenger</item>
-        <item>com.xiaomi.macro</item>
         <item>com.miui.securitycenter</item>
         <item>com.ss.android.ugc.aweme</item>
         <item>cn.nubia.gameassist</item>

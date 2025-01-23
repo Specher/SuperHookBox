@@ -56,7 +56,6 @@ public class Nubia {
         XposedHelpers.findAndHookMethod(View.class, "findViewById", int.class, new XC_MethodHook() {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-
                 int id = (int) param.args[0];
                 if(id == 2131230813){
                     EditText  mEdtLoopCount =  (EditText)  param.getResult();

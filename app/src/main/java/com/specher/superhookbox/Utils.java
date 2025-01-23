@@ -344,7 +344,7 @@ public class Utils {
         String str = random.toString().substring(2,11);
         return str;
     }
-    public static void addFriendByWxid(Context context,String wxid,int scene,String tuiWxid,String tuiNickName){
+    public static void addFriendByWxid(Context context,String wxid,int scene,String tuiWxid,String tuiNickName,String RemarkName){
         Intent params = new Intent();
         params.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         params.setClassName(context, "com.tencent.mm.plugin.profile.ui.SayHiWithSnsPermissionUI");
@@ -356,7 +356,7 @@ public class Utils {
         params.putExtra("Contact_Nick", "");
         params.putExtra("Contact_User", wxid);
         params.putExtra("Contact_Scene", scene);
-        params.putExtra("Contact_RemarkName", "");
+        params.putExtra("Contact_RemarkName", RemarkName);
         params.putExtra("sayhi_with_sns_perm_set_label", false);
         context.startActivity(params);
     }

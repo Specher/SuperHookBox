@@ -12,12 +12,26 @@ import com.specher.superhookbox.Utils;
 import com.specher.superhookbox.XConfig;
 
 import org.json.JSONObject;
+import org.luckypray.dexkit.DexKitBridge;
+import org.luckypray.dexkit.query.FindClass;
+import org.luckypray.dexkit.query.FindMethod;
+import org.luckypray.dexkit.query.matchers.ClassMatcher;
+import org.luckypray.dexkit.query.matchers.FieldMatcher;
+import org.luckypray.dexkit.query.matchers.FieldsMatcher;
+import org.luckypray.dexkit.query.matchers.MethodMatcher;
+import org.luckypray.dexkit.query.matchers.MethodsMatcher;
+import org.luckypray.dexkit.result.ClassData;
+import org.luckypray.dexkit.result.ClassDataList;
+import org.luckypray.dexkit.result.MethodData;
+import org.luckypray.dexkit.result.MethodDataList;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -25,21 +39,22 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 public class WeChat {
         private XConfig config;
         private JSONObject pref;
-
         private Context context;
 
 
+    static {
+        System.loadLibrary("dexkit");
+    }
 
         public void hook(Context context, final XC_LoadPackage.LoadPackageParam loadPackageParam) throws Exception {
             Utils.log("WeChat Hook loaded");
             this.context = context;
-             //hookLog(loadPackageParam.classLoader);
-             // hookAppBrand(loadPackageParam.classLoader);
-             // hookC2CMsg(loadPackageParam.classLoader);
-             //  hookCamera(loadPackageParam.classLoader);
-
-
-
+            String apkPath = loadPackageParam.appInfo.sourceDir;
+            DexKitBridge bridge = DexKitBridge.create(apkPath);
+  //          hookLog(loadPackageParam.classLoader);
+            //hookAppBrand(loadPackageParam.classLoader);
+            hookC2CMsg(loadPackageParam,bridge);
+            hookCamera(loadPackageParam,bridge);
             }
 
 
@@ -133,31 +148,29 @@ public class WeChat {
      }
      l2.q(str, "alvinluo onScanSuccess can not process code result currentMode: %d", new Object[]{Integer.valueOf(baseScanUI.D)});
      }
-      * @param classLoader
+      * @param loadPackageParam
      */
-    public void hookCamera(ClassLoader classLoader){
-            try{
-
-             Class<?> ScanUIRectView=  classLoader.loadClass("com.tencent.mm.plugin.scanner.ui.BaseScanUI$7");
-
-             XposedBridge.hookAllMethods(ScanUIRectView, "a", new XC_MethodHook() {
-                 @Override
-                 protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                     Bundle bundle = (Bundle) param.args[1];
-                     ArrayList<?> parcelableArrayList =    bundle.getParcelableArrayList("result_qbar_result_list");
-                     assert parcelableArrayList != null;
-                     Object WxQbarResult = parcelableArrayList.get(0);
-                     String codeType = (String) XposedHelpers.getObjectField(WxQbarResult,"e");
-                     String codeStr = (String) XposedHelpers.getObjectField(WxQbarResult,"f");
-                     Utils.log("getScanProductInfoList: " +"codeType:"+codeType+" codeStr:"+codeStr);
-                     Toast.makeText(context, "二维码已复制codeType:"+codeType+" codeStr:"+codeStr, Toast.LENGTH_SHORT).show();
-                     ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-
-                     // 创建一个ClipData对象来保存文本
-                     ClipData clipData = ClipData.newPlainText("simple text", "codeType:"+codeType+" codeStr:"+codeStr);
-
-                     // 将ClipData对象放到剪贴板
-                     clipboardManager.setPrimaryClip(clipData);
+    public void hookCamera(XC_LoadPackage.LoadPackageParam loadPackageParam,DexKitBridge bridge){
+        try  {
+            //findClassTest(bridge);
+            ClassData classData = findScanCallBackClass(bridge);
+            Class<?> ScanCallBack = classData.getInstance(loadPackageParam.classLoader);
+            XposedBridge.hookAllMethods(ScanCallBack, "a", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Bundle bundle = (Bundle) param.args[1];
+                    ArrayList<?> parcelableArrayList =    bundle.getParcelableArrayList("result_qbar_result_list");
+                    assert parcelableArrayList != null;
+                    Object WxQbarResult = parcelableArrayList.get(0);
+                    String codeType = (String) XposedHelpers.getObjectField(WxQbarResult,"e");
+                    String codeStr = (String) XposedHelpers.getObjectField(WxQbarResult,"f");
+                    Utils.log("getScanProductInfoList: " +"codeType:"+codeType+" codeStr:"+codeStr);
+                    Toast.makeText(context, "二维码已复制codeType:"+codeType+" codeStr:"+codeStr, Toast.LENGTH_SHORT).show();
+                    ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    // 创建一个ClipData对象来保存文本
+                    ClipData clipData = ClipData.newPlainText("simple text", "codeType:"+codeType+" codeStr:"+codeStr);
+                    // 将ClipData对象放到剪贴板
+                    clipboardManager.setPrimaryClip(clipData);
 //                     try {
 //                         // 格式化当前日期时间为秒数
 //                         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.CHINA); // 使用适合你的格式的模板
@@ -178,14 +191,45 @@ public class WeChat {
 //                         // 这里的异常可能是由mkdirs()等方法抛出的，而不是FileOutputStream
 //                         Utils.log("其他异常: " + e.toString());
 //                     }
-                     super.afterHookedMethod(param);
-                 }
-             });
+                    super.afterHookedMethod(param);
+                }
+            });
 
-            }catch (Exception e){
-                    Utils.log(e.toString());
-            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+
+
+
+//            try{
+//
+//             Class<?> ScanUIRectView=  loadPackageParam.classLoader.loadClass("com.tencent.mm.plugin.scanner.ui.BaseScanUI$7");
+//
+//
+//            }catch (Exception e){
+//                    Utils.log(e.toString());
+//            }
       }
+
+
+    private ClassData findScanCallBackClass(DexKitBridge bridge) {
+        ClassData classData = bridge.findClass(FindClass.create()
+                // 指定搜索的包名范围
+                .searchPackages("com.tencent.mm.plugin.scanner.ui")
+                .matcher(ClassMatcher.create()
+                        // 类中所有方法使用的字符串
+                        .usingStrings("decode_success_cost_time")
+                )
+        ).singleOrThrow(() -> new IllegalStateException("返回结果不唯一"));
+        // 打印找到的类
+        Utils.log("微信找到类:"+classData.getName());
+        return classData;
+        // 获取对应的类实例
+        // Class<?> clazz = classData.getInstance(loadPackageParam.classLoader);
+    }
+
 
 
 
@@ -194,7 +238,6 @@ public class WeChat {
      * @param classLoader
      */
     public void hookAppBrand(ClassLoader classLoader)  {
-
         try {
             Class<?> h3 = classLoader.loadClass("com.tencent.mm.plugin.appbrand.utils.h3");
             XposedBridge.hookAllMethods(h3, "b", new XC_MethodHook() {//j也hook一下
@@ -233,24 +276,16 @@ public class WeChat {
                     super.afterHookedMethod(param);
                     String a= (String) param.args[1];
                     String b= (String) param.args[2];
-
-
                     Utils.log("hookAppBrandteg "+a+" | "+b );
 
                 }
             });
-
 
         }
         catch (Exception e){
             Utils.log("WeChat Hook failed."+e.toString());
         }
 
-
-
-
-        
-        
 
 
     }
@@ -264,22 +299,22 @@ public class WeChat {
                 boolean log = false;
                 Throwable ex = new Throwable();
                 StackTraceElement[] elements = ex.getStackTrace();
-                for (StackTraceElement element : elements){
-                    if (element.getClassName().contains("com.tencent.mm.plugin.appbrand")){
-                        log = true;
-                        break;
-                    }
-                }
-                if (!log){
-                    return;
-                }
+//                for (StackTraceElement element : elements){
+//                    if (element.getClassName().contains("com.tencent.mm.plugin.appbrand")){
+//                        log = true;
+//                        break;
+//                    }
+//                }
+//                if (!log){
+//                    return;
+//                }
                 int level = 0;
                 String name = param.method.getName();
                 String arg0 = (String) param.args[0];
                 String arg1 = (String) param.args[1];
                 Object[] arg2 = (Object[]) param.args[2];
                 String format = arg2 == null ? arg1 : String.format(arg1, arg2);
-                 Utils.log( arg0+" "+ format + "stack:"+ Arrays.toString(elements));
+                Utils.log( arg0+" "+ format + "stack:"+ Arrays.toString(elements));
 
             }
         };
@@ -297,32 +332,31 @@ public class WeChat {
 
 
     /**
-     微信点击账单定位到聊天记录加好友 用于找回误删除的好友
+     微信点击账单定位到聊天记录加好友
      版本：8.0.45 t03.p.G5 com.tencent.mm.sdk.platformtools.y2
      版本：8.0.47 q13.p.G5
      版本：8.0.50 c63.p.b7 com.tencent.mm.sdk.platformtools.z2
+     版本：8.0.55 z93.p
      */
-         public void hookC2CMsg(ClassLoader classLoader){
+         public void hookC2CMsg(XC_LoadPackage.LoadPackageParam loadPackageParam,DexKitBridge bridge){
                 try {
-                    Class<?> p = classLoader.loadClass("c63.p");
-                    XposedBridge.hookAllMethods(p, "b7", new XC_MethodHook() {
+                    ClassData classData = findSubCoreRemittanceClass(bridge);
+                    Class<?> SubCoreRemittanceClass = classData.getInstance(loadPackageParam.classLoader);
+                    MethodData methodData = findJsApiOpenC2CTransferMsgViewEventMethod(bridge,SubCoreRemittanceClass);
+                    XposedBridge.hookAllMethods(SubCoreRemittanceClass, methodData.getMethodName(), new XC_MethodHook() {
                         @Override
                         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                             super.afterHookedMethod(param);
                             Object jsApiOpenC2CTransferMsgViewEvent = param.args[0];
                             Object pgVar =XposedHelpers.getObjectField(jsApiOpenC2CTransferMsgViewEvent,"g");
-                            Context _context = (Context) XposedHelpers.getObjectField(pgVar, "a");
-
+ //                           Context _context = (Context) XposedHelpers.getObjectField(pgVar, "a");
                             String f332751b = (String) XposedHelpers.getObjectField(pgVar, "b");
-
-                            String f332752c=(String) XposedHelpers.getObjectField(pgVar, "c");
-                            Utils.log("转账单号:"+f332751b +" 微信id:"+f332752c);
-
-                            if(_context == null){
-                                Class y2=XposedHelpers.findClass("com.tencent.mm.sdk.platformtools.z2",classLoader);
-                                _context= (Context) XposedHelpers.getStaticObjectField(y2,"a");
-
-                            }
+                            String wx_id=(String) XposedHelpers.getObjectField(pgVar, "c");
+                            Utils.log("转账单号:"+f332751b +" 微信id:"+wx_id);
+//                            if(_context == null){
+//                                Class y2=XposedHelpers.findClass("com.tencent.mm.sdk.platformtools.z2",loadPackageParam.classLoader);
+//                                _context= (Context) XposedHelpers.getStaticObjectField(y2,"a");
+//                            }
                             //3 搜索微信号
                             //15 搜索手机号
                             //17 通过名片 需要填写推荐人
@@ -330,11 +364,7 @@ public class WeChat {
                             //6 通过朋友验证消息
                             //13 通讯录
                             //30 通过扫一扫
-                            Utils.addFriendByWxid(_context,f332752c,14,"","马化腾");
-//                            Uri uri = Uri.parse("weixin://contacts/profile/"+f332752c);
-//                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-//                            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                            _context.startActivity(intent);
+                            Utils.addFriendByWxid(context,wx_id,14,"","",wx_id);
                         }
                     });
 
@@ -344,6 +374,52 @@ public class WeChat {
                 }
 
             }
+
+
+    private ClassData findSubCoreRemittanceClass(DexKitBridge bridge) {
+        ClassData classData =  bridge.findClass(FindClass.create()
+                .matcher(ClassMatcher.create()
+                        // 类中所有方法使用的字符串
+                        .usingStrings("JsApiOpenC2CTransferMsgViewEvent","SubCoreRemittance")
+                )
+        ).singleOrThrow(() -> new IllegalStateException("返回结果不唯一"));
+        // 打印找到的类
+        Utils.log("微信找到类:"+classData.getName());
+        return classData;
+    }
+
+    private MethodData findJsApiOpenC2CTransferMsgViewEventMethod(DexKitBridge bridge,Class<?> SubCoreRemittanceClass){
+
+        return bridge.getClassData(SubCoreRemittanceClass).findMethod(
+                FindMethod.create()
+                        .matcher(
+                                MethodMatcher.create()
+                                        .returnType(boolean.class)
+                                        .paramCount(2)
+                                        .usingStrings("JsApiOpenC2CTransferMsgViewEvent")
+                        )
+        ).singleOrThrow(() -> new IllegalStateException("findJsApiOpenC2CTransferMsgViewEventMethod返回结果不唯一"));
+    }
+
+        private void findClassTest(DexKitBridge bridge) {
+        ClassDataList classDataList = bridge.findClass(FindClass.create()
+
+                .matcher(ClassMatcher.create()
+                        // 类中所有方法使用的字符串
+                        .usingStrings("JsApiOpenC2CTransferMsgViewEvent")
+                )
+        );
+
+        if(classDataList.isEmpty()){
+            Utils.log("没有找到类。");
+        }
+
+        for(ClassData classData : classDataList){
+            Utils.log("找到类:"+classData.getName());
+        }
+    }
+
+
 
 }
 
